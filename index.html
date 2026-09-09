@@ -1,0 +1,3399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Anatomy — PNY RTX 5070</title>
+<meta name="description" content="Explore the hardware and execution model of an RTX 5070 GPU, with connections to machine learning and 24 interactive quiz questions.">
+<style>
+/* Existing PNY explorer theme and responsive layout. */
+#gpu-anatomy{color-scheme:light dark;--ga-bg:light-dark(#f3f6f8,#0b1118);--ga-panel:light-dark(#ffffff,#121b25);--ga-fg:light-dark(#172431,#e3edf5);--ga-muted:light-dark(#516577,#98abba);--ga-line:light-dark(#d1dde6,#2c3c4a);--ga-accent:light-dark(#176e4b,#9cde8d);--ga-wash:light-dark(#e3f0e8,#21352c);--ga-board:light-dark(#245841,#285442);--ga-metal:light-dark(#71828d,#879da9);--ga-dark:light-dark(#24303a,#34434d);--ga-memory:light-dark(#466db0,#779ade);--ga-compute:light-dark(#3b9060,#94c86a);--ga-control:light-dark(#9667a7,#bb92d0);--ga-power:light-dark(#b58c47,#d9b370);--ga-heat:light-dark(#ac6e50,#d99975);--ga-circuit:light-dark(#507665,#628875);color:var(--ga-fg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.55;background:var(--ga-bg);border:1px solid var(--ga-line);border-radius:16px;overflow:hidden;isolation:isolate}
+    #gpu-anatomy *{box-sizing:border-box}
+    #gpu-anatomy button,#gpu-anatomy select,#gpu-anatomy input{font:inherit}
+    #gpu-anatomy button{cursor:pointer}
+    #gpu-anatomy button:focus-visible,#gpu-anatomy select:focus-visible,#gpu-anatomy input:focus-visible,#gpu-anatomy summary:focus-visible{outline:2px solid var(--ga-accent);outline-offset:3px}
+    #gpu-anatomy .ga-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px 17px}
+    #gpu-anatomy .ga-brand{display:flex;align-items:center;gap:12px}
+    #gpu-anatomy .ga-mark{width:35px;height:35px;display:grid;place-items:center;border:1px solid var(--ga-accent);border-radius:8px;color:var(--ga-accent);font-family:monospace;font-size:18px}
+    #gpu-anatomy .ga-overline{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ga-muted)}
+    #gpu-anatomy h2{font-size:22px;letter-spacing:-.025em;line-height:1.2;font-weight:500;margin:3px 0 0}
+    #gpu-anatomy .ga-spec{font-size:12px;color:var(--ga-muted);text-align:right}
+    #gpu-anatomy .ga-spec b{font-weight:500;color:var(--ga-fg)}
+    #gpu-anatomy .ga-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:0 20px;border-bottom:1px solid var(--ga-line)}
+    #gpu-anatomy .ga-tab{background:transparent;color:var(--ga-muted);border:0;border-bottom:2px solid transparent;border-radius:0;padding:12px 13px;display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap}
+    #gpu-anatomy .ga-tab[aria-pressed=true]{color:var(--ga-accent);border-bottom-color:var(--ga-accent)}
+    #gpu-anatomy .ga-tab span{font:11px ui-monospace,monospace;opacity:.75}
+    #gpu-anatomy .ga-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+    #gpu-anatomy .ga-main{min-width:0;position:relative}
+    #gpu-anatomy .ga-stage{height:474px;position:relative;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 52% 58%,var(--ga-panel),var(--ga-bg) 75%)}
+    #gpu-anatomy canvas{display:block;width:100%;height:100%;touch-action:none}
+    #gpu-anatomy .ga-stage-head{position:absolute;top:17px;left:18px;right:18px;z-index:2;display:flex;justify-content:space-between;gap:10px;pointer-events:none;font-size:11px;color:var(--ga-muted)}
+    #gpu-anatomy .ga-stage-foot{position:absolute;left:18px;bottom:13px;right:18px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;color:var(--ga-muted);font-size:11px}
+    #gpu-anatomy .ga-hint{position:absolute;top:45%;left:20px;right:20px;text-align:center;color:var(--ga-muted);pointer-events:none}
+    #gpu-anatomy .ga-pin{position:absolute;pointer-events:none;max-width:230px;white-space:nowrap;background:var(--ga-panel);color:var(--ga-fg);border:1px solid var(--ga-line);padding:5px 9px;border-radius:5px;font-size:12px;box-shadow:0 3px 12px color-mix(in srgb,var(--ga-dark) 10%,transparent);transform:translate(-50%,-100%);z-index:2}
+    #gpu-anatomy .ga-pin::after{content:"";position:absolute;bottom:-6px;left:50%;width:1px;height:6px;background:var(--ga-accent)}
+    #gpu-anatomy .ga-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:13px 18px;border-top:1px solid var(--ga-line);min-height:65px}
+    #gpu-anatomy .ga-range-label{display:flex;flex-direction:column;gap:3px;flex:1;min-width:115px;max-width:220px;font-size:12px;color:var(--ga-muted)}
+    #gpu-anatomy .ga-range-label span{display:flex;justify-content:space-between;gap:12px}
+    #gpu-anatomy input[type=range]{width:100%;accent-color:var(--ga-accent);cursor:pointer;margin:0}
+    #gpu-anatomy .ga-button{border:1px solid var(--ga-line);background:var(--ga-panel);color:var(--ga-fg);border-radius:7px;padding:7px 10px;font-size:12px;min-height:34px}
+    #gpu-anatomy .ga-button:hover{background:var(--ga-wash)}
+    #gpu-anatomy .ga-button:disabled{opacity:.4;cursor:default}
+    #gpu-anatomy .ga-button.ga-primary{background:var(--ga-accent);color:var(--ga-bg);border-color:var(--ga-accent)}
+    #gpu-anatomy .ga-switch{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ga-muted);cursor:pointer}
+    #gpu-anatomy .ga-switch input{accent-color:var(--ga-accent)}
+    #gpu-anatomy .ga-aside{padding:18px 19px 20px;background:var(--ga-panel);border-left:1px solid var(--ga-line);min-width:0}
+    #gpu-anatomy .ga-field{display:flex;flex-direction:column;gap:7px;color:var(--ga-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+    #gpu-anatomy select{display:block;width:100%;max-width:100%;background:var(--ga-bg);color:var(--ga-fg);border:1px solid var(--ga-line);border-radius:7px;padding:9px 7px;font-size:13px;letter-spacing:0;text-transform:none}
+    #gpu-anatomy .ga-category{margin:20px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ga-accent)}
+    #gpu-anatomy h3{font-size:20px;line-height:1.2;letter-spacing:-.02em;font-weight:500;margin:0 0 8px}
+    #gpu-anatomy .ga-fact{font-size:12px;color:var(--ga-muted);margin-bottom:17px}
+    #gpu-anatomy .ga-copy{font-size:13px;margin:0 0 15px}
+    #gpu-anatomy .ga-copy-title{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ga-muted);margin:16px 0 5px}
+    #gpu-anatomy .ga-detail{margin-top:13px;font-size:12px;border-top:1px solid var(--ga-line);padding-top:12px}
+    #gpu-anatomy summary{cursor:pointer;color:var(--ga-muted)}
+    #gpu-anatomy .ga-detail p{margin:8px 0;color:var(--ga-muted)}
+    #gpu-anatomy .ga-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    #gpu-anatomy .ga-related{border:0;border-bottom:1px solid var(--ga-line);background:none;color:var(--ga-fg);font-size:12px;padding:2px 0;margin-right:8px}
+    #gpu-anatomy .ga-legend{display:flex;flex-wrap:wrap;gap:12px;padding:0 18px 13px;font-size:11px;color:var(--ga-muted)}
+    #gpu-anatomy .ga-legend span{display:inline-flex;gap:5px;align-items:center}
+    #gpu-anatomy .ga-dot{display:inline-block;width:7px;height:7px;border-radius:2px}
+    #gpu-anatomy .ga-timeline{display:flex;gap:5px;padding:12px 18px 0;flex-wrap:wrap}
+    #gpu-anatomy .ga-step{border:0;border-radius:4px;flex:1;min-width:23px;background:var(--ga-line);color:var(--ga-muted);font-size:11px;min-height:26px}
+    #gpu-anatomy .ga-step[aria-pressed=true]{background:var(--ga-accent);color:var(--ga-bg)}
+    #gpu-anatomy .ga-bottom{border-top:1px solid var(--ga-line);padding:13px 20px;font-size:11px;color:var(--ga-muted)}
+    #gpu-anatomy .ga-bottom summary{display:list-item}
+    #gpu-anatomy .ga-sources{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-top:12px}
+    #gpu-anatomy .ga-sources a{color:var(--ga-fg);text-decoration:underline;text-underline-offset:3px}
+    #gpu-anatomy .ga-note{margin:12px 0 0;max-width:95ch}
+    #gpu-anatomy [hidden]{display:none!important}
+    @media(max-width:670px){#gpu-anatomy .ga-layout{grid-template-columns:1fr}#gpu-anatomy .ga-aside{border-left:0;border-top:1px solid var(--ga-line)}#gpu-anatomy .ga-stage{height:400px}#gpu-anatomy .ga-head{padding:17px 16px}#gpu-anatomy .ga-tabs{padding:0 7px}#gpu-anatomy .ga-tab{padding:11px 9px;font-size:12px}#gpu-anatomy .ga-spec{display:none}#gpu-anatomy .ga-sources{grid-template-columns:1fr}#gpu-anatomy h2{font-size:20px}#gpu-anatomy .ga-aside{padding:18px}#gpu-anatomy .ga-copy{max-width:70ch}#gpu-anatomy .ga-stage-foot{font-size:11px}}
+    @media(max-width:390px){#gpu-anatomy .ga-stage{height:340px}#gpu-anatomy .ga-tab span{display:none}#gpu-anatomy .ga-controls{gap:8px}#gpu-anatomy .ga-button{padding:7px 8px}#gpu-anatomy .ga-stage-foot span:last-child{display:none}}
+    @media(pointer:coarse){#gpu-anatomy .ga-button,#gpu-anatomy .ga-tab,#gpu-anatomy .ga-step{min-height:44px}#gpu-anatomy select{font-size:16px}#gpu-anatomy .ga-related{min-height:36px}}
+
+    /* Physical materials keep their real-world appearance in both themes. */
+    #gpu-anatomy{--ga-shell:light-dark(#30343a,#373c43);--ga-rubber:light-dark(#1b1e23,#262a30);--ga-silver:light-dark(#9aa1a8,#a7b0bb);--ga-ink:light-dark(#eeeff1,#f5f6f7);--ga-pcbblack:light-dark(#202a29,#25332f);--ga-gold:light-dark(#baa15c,#c7af70);--ga-trace:light-dark(#72735a,#838878);--ga-ceramic:light-dark(#9e9682,#b0a797);--ga-packagegreen:light-dark(#265440,#396e53);--ga-silicon:light-dark(#505a6a,#67778b);--ga-padgray:light-dark(#a8b3b5,#b7c3c6);--ga-pastegray:light-dark(#939796,#acb1af);--ga-chokegray:light-dark(#4d5359,#5c636c);--ga-cavity:light-dark(#0b0c0e,#111215);--ga-trim:light-dark(#4a4f57,#555d68);--ga-etch:light-dark(#77818e,#95a0ad)}
+    #gpu-anatomy .ga-stage{height:540px}
+    #gpu-anatomy .ga-view-field{min-width:140px;max-width:170px;font-size:11px;gap:3px;letter-spacing:0;text-transform:none}
+    #gpu-anatomy .ga-view-field select{padding:6px;font-size:12px}
+    #gpu-anatomy .ga-stage-head{flex-wrap:wrap}
+    #gpu-anatomy .ga-spec{max-width:250px}
+    #gpu-anatomy .ga-pin{max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+    @media(max-width:670px){#gpu-anatomy .ga-stage{height:440px}#gpu-anatomy .ga-view-field{max-width:180px}#gpu-anatomy .ga-view-field select{font-size:16px}}
+    @media(max-width:390px){#gpu-anatomy .ga-stage{height:370px}}
+
+</style>
+<style>
+/* The quiz extends the explorer's theme; correct/incorrect states also use text. */
+body { margin: 0; padding: clamp(.5rem, 2vw, 1.5rem); background: light-dark(#edf1f5, #080d13); }
+#gpu-anatomy { max-width: 1260px; margin-inline: auto; font-size: 1rem; }
+#gpu-anatomy .ga-copy { font-size: .925rem; line-height: 1.6; }
+#gpu-anatomy .ga-fact, #gpu-anatomy .ga-detail { font-size: .875rem; }
+#gpu-anatomy .ga-layout { grid-template-columns: minmax(0, 1fr) 310px; }
+#gpu-anatomy .activity-nav { display: flex; gap: .5rem; flex-wrap: wrap; padding: 0 1.5rem 1rem; }
+#gpu-anatomy .activity-nav button { font-size: .95rem; padding: .65rem 1rem; }
+#gpu-anatomy .activity-nav button[aria-pressed=true] { background: var(--ga-wash); border-color: var(--ga-accent); }
+#gpu-anatomy .quiz-layout { display: grid; grid-template-columns: 255px minmax(0, 1fr); border-top: 1px solid var(--ga-line); }
+#gpu-anatomy .quiz-subjects { padding: 1.4rem; border-right: 1px solid var(--ga-line); }
+#gpu-anatomy .quiz-subjects h3 { font-size: 1rem; margin-bottom: 1rem; }
+#gpu-anatomy .quiz-subject { display: flex; flex-direction: column; gap: .4rem; text-align: left; width: 100%; margin-bottom: .65rem; padding: .85rem; white-space: normal; }
+#gpu-anatomy .quiz-subject[aria-current=step] { background: var(--ga-wash); border-color: var(--ga-accent); }
+#gpu-anatomy .quiz-subject-title { font-size: .9rem; line-height: 1.4; }
+#gpu-anatomy .quiz-subject-status { font-size: .8rem; color: var(--ga-muted); }
+#gpu-anatomy .quiz-main { padding: clamp(1rem, 3vw, 2rem); min-width: 0; }
+#gpu-anatomy .quiz-heading { font-size: 1.5rem; line-height: 1.3; margin-bottom: 1rem; }
+#gpu-anatomy .quiz-eyebrow { color: var(--ga-muted); font-size: .85rem; margin: 0 0 .65rem; }
+#gpu-anatomy .quiz-main progress { display: block; width: 100%; height: .4rem; accent-color: var(--ga-accent); margin: 0 0 1.5rem; }
+#gpu-anatomy .quiz-options { padding: 0; margin: 0; border: 0; min-width: 0; }
+#gpu-anatomy .quiz-question { font-size: 1.1rem; line-height: 1.55; padding: 0; margin-bottom: 1.1rem; }
+#gpu-anatomy .quiz-option { display: flex; align-items: flex-start; gap: .75rem; padding: .9rem 1rem; margin-bottom: .7rem; border: 1px solid var(--ga-line); border-radius: .5rem; background: var(--ga-panel); cursor: pointer; }
+#gpu-anatomy .quiz-option:has(input:checked) { border-color: var(--ga-accent); }
+#gpu-anatomy .quiz-option input { accent-color: var(--ga-accent); margin-top: .3rem; flex: 0 0 auto; }
+#gpu-anatomy .quiz-option-copy { display: flex; flex-direction: column; gap: .55rem; font-size: 1rem; min-width: 0; overflow-wrap: anywhere; }
+#gpu-anatomy .quiz-feedback, #gpu-anatomy .quiz-note { color: var(--ga-muted); font-size: .875rem; line-height: 1.6; }
+#gpu-anatomy .quiz-verdict { font-size: .85rem; font-weight: 600; }
+#gpu-anatomy .quiz-correct { background: var(--ga-wash); }
+#gpu-anatomy .quiz-incorrect { border-color: light-dark(#b63d52, #ed8190); }
+#gpu-anatomy .quiz-answer-status { color: var(--ga-accent); font-size: .95rem; }
+#gpu-anatomy .quiz-hint { margin: 1rem 0; font-size: .925rem; }
+#gpu-anatomy .quiz-hint p { color: var(--ga-muted); }
+#gpu-anatomy .quiz-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.25rem 0; }
+#gpu-anatomy .quiz-actions button { font-size: .925rem; padding: .75rem 1rem; min-height: 44px; white-space: normal; text-align: left; }
+#gpu-anatomy .quiz-score { font-size: 3.2rem; line-height: 1.1; margin: 1rem 0; color: var(--ga-accent); font-variant-numeric: tabular-nums; }
+#gpu-anatomy .quiz-review { padding-left: 1.2rem; }
+#gpu-anatomy .quiz-review li { padding: .5rem 0 1rem; }
+#gpu-anatomy .quiz-review p { margin: .4rem 0; }
+#gpu-anatomy .quiz-complete { padding-top: 1rem; border-top: 1px solid var(--ga-line); }
+#gpu-anatomy .quiz-announcement { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 760px) {
+  #gpu-anatomy .ga-layout, #gpu-anatomy .quiz-layout { grid-template-columns: 1fr; }
+  #gpu-anatomy .ga-aside { border-left: 0; border-top: 1px solid var(--ga-line); }
+  #gpu-anatomy .quiz-subjects { border-right: 0; border-bottom: 1px solid var(--ga-line); padding: 1rem; display: grid; gap: .5rem; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #gpu-anatomy .quiz-subjects h3, #gpu-anatomy .quiz-subjects > p { grid-column: 1 / -1; margin: 0; }
+  #gpu-anatomy .quiz-subject { margin: 0; padding: .65rem; }
+  #gpu-anatomy .activity-nav { padding-inline: 1rem; }
+}
+@media (max-width: 380px) {
+  #gpu-anatomy .activity-nav button { flex: 1; padding-inline: .5rem; }
+  #gpu-anatomy .quiz-actions button { width: 100%; }
+  #gpu-anatomy .quiz-option { padding: .75rem; }
+}
+
+#gpu-anatomy .quiz-main a { color: var(--ga-accent); text-underline-offset: .2em; }
+
+</style>
+</head>
+<body>
+<div id="gpu-anatomy" aria-label="Interactive RTX 5070 GPU anatomy explorer">
+  <header class="ga-head">
+    <div class="ga-brand"><div class="ga-mark" aria-hidden="true">▦</div><div><div class="ga-overline">A field guide to GPU infrastructure</div><h2>Inside the PNY RTX 5070</h2></div></div>
+    <div class="ga-spec"><b>PNY triple-fan reference · Blackwell GB205</b><br>299.5 × 120 × 48 mm · 12 GB GDDR7</div>
+  </header>
+  <nav class="activity-nav" aria-label="Learning activity">
+    <button class="ga-button" id="activity-explore" type="button" aria-pressed="true" aria-controls="explore-view">Explore the GPU</button>
+    <button class="ga-button" id="activity-quiz" type="button" aria-pressed="false" aria-controls="quiz-view">Quiz yourself</button>
+  </nav>
+  <div id="explore-view">
+  <nav class="ga-tabs" aria-label="Anatomy level">
+    <button class="ga-tab" type="button" data-level="card" aria-pressed="true"><span>01</span> The card</button>
+    <button class="ga-tab" type="button" data-level="chip" aria-pressed="false"><span>02</span> Inside the chip</button>
+    <button class="ga-tab" type="button" data-level="sm" aria-pressed="false"><span>03</span> One SM</button>
+    <button class="ga-tab" type="button" data-level="flow" aria-pressed="false"><span>04</span> A kernel’s journey</button>
+  </nav>
+  <div class="ga-layout">
+    <div class="ga-main">
+      <div class="ga-stage" id="ga-stage">
+        <div class="ga-stage-head"><span id="ga-stage-title">PNY · PHYSICAL ASSEMBLY</span><span id="ga-scale">Exterior reference · schematic internals</span></div>
+        <div class="ga-hint" id="ga-loading">Building the 3D assembly…</div>
+        <div class="ga-pin" id="ga-pin" hidden></div>
+        <div class="ga-stage-foot"><span>Drag to orbit · Scroll or pinch to zoom · Click a part</span><span id="ga-part-count"></span></div>
+      </div>
+      <div class="ga-timeline" id="ga-timeline" aria-label="Kernel journey steps" hidden></div>
+      <div class="ga-controls">
+        <label class="ga-range-label" id="ga-explode-wrap"><span>Separate layers <output id="ga-explode-value">0%</output></span><input type="range" id="ga-explode" min="0" max="100" value="0" aria-label="Separate layers"></label>
+        <label class="ga-field ga-view-field" id="ga-view-wrap" for="ga-view">View<select id="ga-view"><option value="back">Backplate</option><option value="fans">Fan side</option><option value="edge">Power connector</option><option value="ports">Display outputs</option><option value="board">Exposed board</option><option value="layers">Exploded assembly</option></select></label>
+        <label class="ga-switch" id="ga-isolate-wrap"><input id="ga-isolate" type="checkbox"> Isolate part</label>
+        <div id="ga-flow-controls" hidden><button class="ga-button" id="ga-prev" type="button" aria-label="Previous journey step">←</button> <button class="ga-button ga-primary" id="ga-play" type="button">Play journey</button> <button class="ga-button" id="ga-next" type="button" aria-label="Next journey step">→</button></div>
+        <button class="ga-button" type="button" id="ga-home" aria-label="Return to the default viewing angle">Home view</button>
+      </div>
+      <div class="ga-legend" aria-label="Component color key" hidden><span><i class="ga-dot" style="background:var(--ga-compute)"></i>Compute</span><span><i class="ga-dot" style="background:var(--ga-memory)"></i>Memory</span><span><i class="ga-dot" style="background:var(--ga-control)"></i>Control / I/O</span><span><i class="ga-dot" style="background:var(--ga-power)"></i>Power</span><span><i class="ga-dot" style="background:var(--ga-heat)"></i>Cooling</span></div>
+    </div>
+    <aside class="ga-aside" aria-label="Selected component">
+      <label class="ga-field" for="ga-component">Explore a component<select id="ga-component" aria-label="Explore a component"></select></label>
+      <div id="ga-description" aria-live="polite" aria-atomic="true">
+        <div class="ga-category" id="ga-category"></div><h3 id="ga-name"></h3><div class="ga-fact" id="ga-fact"></div>
+        <p class="ga-copy" id="ga-role"></p>
+        <div class="ga-copy-title">Connection to your ML work</div><p class="ga-copy" id="ga-ml"></p>
+      </div>
+      <button id="ga-dive" class="ga-button ga-primary" type="button" hidden></button>
+      <details class="ga-detail" id="ga-more"><summary>One level deeper</summary><p id="ga-deeper"></p></details>
+      <div class="ga-copy-title">Connected to</div><div class="ga-links" id="ga-related"></div>
+    </aside>
+  </div>
+  <details class="ga-bottom"><summary>Model fidelity & primary sources</summary>
+    <p class="ga-note">Exterior reference: your PNY RTX 5070 photos and PNY’s standard triple-fan brochure. The backplate design appears to match this family; the exact OC/non-OC SKU is unconfirmed. Overall proportions, three fans, angular backplate vents and connector configuration follow these references. Small features are approximated from images. Hidden PCB layout, passive and power-stage counts, heat-pipe routing and internal silicon placement remain educational reconstructions. This is not a manufacturing CAD model. The kernel journey is conceptual; no live telemetry or measured timing is implied.</p>
+    <div class="ga-sources">
+      <a href="https://www.pny.com/File%20Library/Company/Support/Product%20Brochures/GeForce%20Graphics/English/RTX-5070-12GB-Triple-Fan-Brochure.pdf" target="_blank" rel="noopener noreferrer">PNY triple-fan RTX 5070 · dimensions, cooler & connectors</a>
+      <a href="https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf" target="_blank" rel="noopener noreferrer">NVIDIA RTX Blackwell whitepaper · SM diagram & Appendix C</a>
+      <a href="https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5070-family/" target="_blank" rel="noopener noreferrer">NVIDIA RTX 5070 specifications</a>
+      <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html" target="_blank" rel="noopener noreferrer">CUDA programming model · blocks, warps & SMs</a>
+      <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/advanced-kernel-programming.html" target="_blank" rel="noopener noreferrer">CUDA advanced kernels · execution & memory</a>
+      <a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html" target="_blank" rel="noopener noreferrer">CUDA best practices · coalescing, registers & shared memory</a>
+      <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html" target="_blank" rel="noopener noreferrer">CUDA asynchronous execution · streams & copies</a>
+      <a href="https://www.micron.com/products/memory/graphics-memory/gddr7" target="_blank" rel="noopener noreferrer">Micron · GDDR7 memory</a>
+      <a href="https://www.ti.com/product-category/power-management/multiphase.html" target="_blank" rel="noopener noreferrer">Texas Instruments · multiphase power regulation</a>
+      <a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/" target="_blank" rel="noopener noreferrer">NVIDIA video engines · NVENC & NVDEC</a>
+      <a href="https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html" target="_blank" rel="noopener noreferrer">Blackwell tuning · use the compute capability 12.0 sections</a>
+    </div>
+    <p class="ga-note">Scope: major physical assemblies, compute and graphics engines, memory hierarchy, execution control and software-to-hardware mapping. Individual transistors, unpublished circuits and every board-specific passive component are not reproduced. The RTX 5070 uses GDDR7 and has no NVLink connector; do not substitute datacenter Blackwell’s HBM or NVLink specifications.</p>
+  </details>
+  </div>
+  <section id="quiz-view" aria-label="GPU machine learning quiz" hidden></section>
+</div>
+<script>
+(() => {
+'use strict';
+const __modules = {};
+// src/scene/flow.js
+__modules["src/scene/flow.js"] = (() => {
+
+/**
+* One possible tiled matrix-multiplication path, not a timing simulation.
+* Return the packet to the controller, which owns playback and reduced motion.
+*/
+function buildFlow({
+  THREE,
+  palette,
+  objects,
+  world,
+  group,
+  mat,
+  box,
+  cylinder,
+  line,
+  tube,
+  label,
+  layer,
+  tile,
+  flowLines
+}) {
+  const base = group(null);
+  box(base, 16.5, .07, 10.5, 0, - .2, 0, 'dark', null, {
+    transparent: true,
+    opacity: .45
+  });
+  const config = [['host', - 6.3, - 3.35, 2.6, 1.6, 'CPU + PYTORCH', 'control'], ['ram', - 2.7, - 3.35, 2.6, 1.6, '32 GB DDR5', 'memory'], ['pcie', 1, - 3.35, 2.6, 1.6, 'PCIe + COPY', 'control'], ['vram', 5.5, - 3.35, 2.6, 1.6, '12 GB GDDR7', 'memory'], ['grid', 5.5, .05, 2.6, 1.6, 'BLOCKS → SMs', 'control'], ['l2', 1, .05, 2.6, 1.6, 'L2 CACHE', 'memory'], ['shared', - 2.7, .05, 2.6, 1.6, 'SHARED / L1', 'memory'], ['matrix', - 2.7, 3.45, 2.6, 1.6, 'TENSOR CORES', 'compute'], ['output', 2.8, 3.45, 2.6, 1.6, 'OUTPUT', 'memory']];
+  config.forEach(([id, x, z, w, d, tx, k]) => {
+    const g = tile(id, x, z, w, d, tx, k, .4);
+    if (id === 'host') {
+      box(g, 1.36, .16, .83, 0, .27, - .1, 'metal', 'host');
+      label(g, 'HOST', 0, .36, - .1, 1.0, 'dark');
+    }
+    if (id === 'ram' || id === 'vram') {
+      for (let i = 0; i < 4; i ++) box(g, .39, .15, .3, - .75 + i * .5, .25, - .36, 'dark', id);
+    }
+    if (id === 'grid') {
+      for (let i = 0; i < 8; i ++) box(g, .27, .15, .24, - .85 +(i % 4) * .56, .25, - .38 + Math.floor(i / 4) * .44, 'compute', id);
+    }
+    if (id === 'matrix') {
+      for (let i = 0; i < 9; i ++) box(g, .36, .14, .3, - .47 +(i % 3) * .47, .27, - .45 + Math.floor(i / 3) * .42, 'power', id);
+    }
+  });
+  const warp = group('warp', 5.5, .25, 1.49);
+  for (let i = 0; i < 32; i ++) box(warp, .11, .12, .18, - 1.04 +(i % 16) * .14, 0, - .15 + Math.floor(i / 16) * .32, 'compute', 'warp');
+  label(warp, '32-THREAD WARP', 0, .12, .51, 2.2, 'fg');
+  const regs = tile('registers', - 5.7, 1.75, 2.15, 1.0, 'REGISTERS', 'memory', .3);
+  for (let i = 0; i < 10; i ++) box(regs, .1, .035, .7, - .78 + i * .17, .2, 0, 'metal', null);
+  const pts = config.map(q => new THREE.Vector3(q[1], .42, q[2]));
+  for (let i = 0; i < pts.length - 1; i ++) {
+    const a = pts[i],
+    b = pts[i + 1],
+    dir = b.clone().sub(a).normalize();
+    const start = a.clone().addScaledVector(dir, 1.5),
+    end = b.clone().addScaledVector(dir, - 1.5);
+    const curve = new THREE.LineCurve3(start, end);
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 1, .037, 6, false), mat('metal'));
+    world.add(mesh);
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(.14, .28, 12), mat('metal'));
+    arrow.position.copy(end);
+    arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    world.add(arrow);
+    flowLines.push({
+      mesh,
+      arrow,
+      start,
+      end
+    });
+  }
+  line(base, [[- 2.7, .35, .95], [- 5.7, .35, 1.1], [- 5.7, .35, 2.7], [- 4.15, .35, 3.45]], 'memory', .8);
+  const packet = new THREE.Mesh(new THREE.SphereGeometry(.14, 16, 12), new THREE.MeshBasicMaterial({
+    color: palette.accent
+  }));
+  packet.visible = false;
+  world.add(packet);
+  return packet;
+}
+
+return { buildFlow };
+})();
+// src/scene/sm.js
+__modules["src/scene/sm.js"] = (() => {
+
+/** One SM: four subpartitions and their shared resources. */
+function buildSm({
+  THREE,
+  palette,
+  objects,
+  world,
+  group,
+  mat,
+  box,
+  cylinder,
+  line,
+  tube,
+  label,
+  layer,
+  tile
+}) {
+  const base = group(null);
+  box(base, 12.4, .15, 10.7, 0, - .16, 0, 'dark', null);
+  const ic = tile('instruction', 0, - 4.86, 11.4, .47, 'COMMON INSTRUCTION CACHE', 'control');
+  layer(ic, .5);
+  for (let p = 0; p < 4; p ++) {
+    const x =(p % 2 ? 1: - 1) * 3.0,
+    z =(p < 2 ? - 1: 1) * 2.04;
+    const part = group('partition', x, 0, z);
+    box(part, 5.65, .12, 3.8, 0, 0, 0, 'board', 'partition');
+    layer(part, .16);
+    const local = group('instruction', x, .17, z - 1.63);
+    box(local, 5.16, .13, .23, 0, 0, 0, 'control', 'instruction');
+    layer(local, .4);
+    const sched = group('scheduler', x - 1.52, .25, z - 1.16);
+    box(sched, 1.73, .22, .4, 0, 0, 0, 'control', 'scheduler');
+    label(sched, 'SCHEDULER', 0, .12, 0, 1.5, 'fg');
+    layer(sched, .6);
+    const score = group('scoreboard', x + .05, .28, z - 1.16);
+    box(score, .87, .27, .4, 0, 0, 0, 'control', 'scoreboard');
+    label(score, 'READY', 0, .15, 0, .73, 'fg');
+    layer(score, .6);
+    const dispatch = group('dispatch', x + 1.58, .25, z - 1.16);
+    box(dispatch, 1.74, .22, .4, 0, 0, 0, 'control', 'dispatch');
+    label(dispatch, 'DISPATCH', 0, .12, 0, 1.5, 'fg');
+    layer(dispatch, .6);
+    const regs = group('registers', x, .24, z - .63);
+    box(regs, 5.12, .25, .48, 0, 0, 0, 'memory', 'registers');
+    for (let k = 0; k < 24; k ++) box(regs, .12, .025, .36, - 2.38 + k * .205, .14, 0, 'metal', null);
+    label(regs, '64 KB REGISTERS', 0, .17, 0, 2.35, 'fg');
+    layer(regs, .85);
+    const alu = group('alu', x - 1.43, .25, z + .52);
+    for (let r = 0; r < 8; r ++) for (let c = 0; c < 4; c ++) box(alu, .41, .22, .16, - .74 + c * .49, 0, - .72 + r * .21, 'compute', 'alu');
+    label(alu, '32 FP32 / INT32', 0, .13, .97, 2.04, 'fg');
+    layer(alu, 1.0);
+    const ten = group('tensor', x + .38, .29, z + .37);
+    box(ten, 1.09, .37, 1.43, 0, 0, 0, 'compute', 'tensor', {
+      metalness: .7
+    });
+    for (let r = 0; r < 4; r ++) for (let c = 0; c < 4; c ++) box(ten, .17, .03, .24, - .32 + c * .215, .2, - .46 + r * .307, 'power', null);
+    label(ten, 'TENSOR', 0, .245, .05, .94, 'dark');
+    layer(ten, 1.05);
+    const lsu = group('lsu', x + 1.69, .25, z + .24);
+    for (let r = 0; r < 4; r ++) box(lsu, .71, .21, .27, 0, 0, - .48 + r * .34, 'memory', 'lsu');
+    label(lsu, 'LD / ST', 0, .12, .79, .82, 'fg');
+    layer(lsu, .9);
+    const sf = group('sfu', x + 2.3, .25, z + .24);
+    for (let r = 0; r < 4; r ++) box(sf, .32, .21, .27, 0, 0, - .48 + r * .34, 'control', 'sfu');
+    layer(sf, .9);
+  }
+  const shared = tile('shared', - 1.23, 4.46, 8.85, .89, 'UNIFIED L1 CACHE / SHARED MEMORY', 'memory');
+  layer(shared, .75);
+  const tex = group('texture', 4.43, .22, 4.46);
+  for (let i = 0; i < 4; i ++) box(tex, .39, .24, .8, - .68 + i * .45, 0, 0, 'control', 'texture');
+  layer(tex, .75);
+  const rt = tile('rt', 0, .0, 2.8, .46, 'RT CORE', 'control', .33);
+  layer(rt, 1.65);
+  for (let sign of[- 1, 1]) {
+    const fp = tile('fp64', sign * 4.9, 0, .6, .46, 'FP64', 'compute', .28);
+    layer(fp, 1.2);
+  }
+  const bar = tile('barrier', - 4.8, 4.46, .58, .57, 'SYNC', 'control', .5);
+  layer(bar, 1.12);
+}
+
+return { buildSm };
+})();
+// src/scene/chip.js
+__modules["src/scene/chip.js"] = (() => {
+
+/** GB205 functional organization; positions are not a silicon floorplan. */
+function buildChip({
+  THREE,
+  palette,
+  objects,
+  world,
+  group,
+  mat,
+  box,
+  cylinder,
+  line,
+  tube,
+  label,
+  layer,
+  tile
+}) {
+  const base = group(null);
+  box(base, 15.6, .16, 11.9, 0, - .18, 0, 'dark', null, {
+    metalness: .7
+  });
+  const positions = [[- 4.2, - 2.55], [0, - 2.55], [4.2, - 2.55], [- 2.2, 2.65], [2.2, 2.65]];
+  positions.forEach(([x, z], i) => {
+    const g = group('gpc', x, .03, z);
+    box(g, 3.88, .12, 3.35, 0, 0, 0, 'board', 'gpc');
+    label(g, 'GPC ' + i, 0, .075, - 1.37, 1.0, 'fg');
+    layer(g, .25);
+    for (let t = 0; t < 5; t ++) {
+      const tx = - 1.46 + t * .73;
+      const tc = group('tpc', x + tx, .15, z + .02);
+      box(tc, .64, .09, 1.69, 0, 0, 0, 'control', 'tpc', {
+        transparent: true,
+        opacity: .5
+      });
+      layer(tc, .48);
+      for (let n = 0; n < 2; n ++) {
+        let disabled = i === 4 && t === 4;
+        const id = disabled ? null: 'sm';
+        const sm = group(id, x + tx, .29, z - .39 + n * .8);
+        box(sm, .54, .22, .66, 0, 0, 0, disabled ? 'dark': 'compute', id, {
+          roughness: .48,
+          metalness: .45
+        });
+        if (disabled) label(sm, 'off', 0, .12, 0, .42, 'muted');
+        else label(sm, 'SM', 0, .12, 0, .41, 'dark');
+        layer(sm, .95);
+      }
+      const poly = group('polymorph', x + tx, .17, z + 1.13);
+      box(poly, .55, .14, .25, 0, 0, 0, 'control', 'polymorph');
+      layer(poly, .45);
+    }
+    const r = group('raster', x, .19, z - 1.03);
+    box(r, 1.64, .18, .29, - .9, 0, 0, 'control', 'raster');
+    label(r, 'RASTER', - .9, .1, 0, 1, 'fg');
+    layer(r, .4);
+    const rop = group('rop', x + .94, .2, z - 1.03);
+    box(rop, 1.55, .2, .29, 0, 0, 0, 'control', 'rop');
+    label(rop, 'ROP', 0, .11, 0, .55, 'fg');
+    layer(rop, .4);
+  });
+  const l2 = group('l2', 0, .19, 0);
+  for (let i = 0; i < 12; i ++) box(l2, .94, .37, .69, - 5.5 + i, 0, 0, 'memory', 'l2');
+  label(l2, '48 MB L2 CACHE', 0, .2, 0, 2.55, 'fg');
+  layer(l2, .5);
+  const fabric = group('fabric', 0, .0, 0);
+  for (let[x, z] of positions) {
+    line(fabric, [[x, .04, 0], [x, .04, z]], 'memory', .8);
+    for (let j = 0; j < 3; j ++) box(fabric, .03, .03, Math.abs(z), x - .12 + j * .12, .04, z / 2, 'memory', 'fabric');
+  }
+  box(fabric, 12.2, .035, .07, 0, .04, 0, 'memory', 'fabric');
+  for (let side of[- 1, 1]) for (let i = 0; i < 3; i ++) {
+    let x =(i - 1) * 4.4;
+    const mc = tile('controller', x, side * 5.15, 3.65, .68, '32-bit GDDR7', 'memory');
+    layer(mc, .25);
+    line(fabric, [[x, .04, side * 4], [x, .04, side * 5]], 'memory', .6);
+  }
+  const a = [['frontend', - 7, 0, 'COMMAND'], ['copy', - 7, 1.28, 'COPY'], ['mmu', - 7, - 1.3, 'MMU'], ['amp', - 7, 2.6, 'AI MGMT'], ['clock', - 7, - 2.6, 'CLOCK'], ['encode', 7, - 1.35, 'NVENC'], ['decode', 7, 0, 'NVDEC'], ['display', 7, 1.35, 'DISPLAY']];
+  a.forEach(([id, x, z, tx]) => {
+    let g = tile(id, x, z, .96, 1.08, tx, 'control');
+    layer(g, .6);
+  });
+  label(base, '48 ENABLED SMs · 24 TPCs · 5 GPCs', 0, - .085, 5.88, 5, 'fg');
+}
+
+return { buildChip };
+})();
+// src/scene/card.js
+__modules["src/scene/card.js"] = (() => {
+
+// The card uses 20 mm per world unit. The outside envelope follows PNY's
+// 299.5 × 120 × 48 mm triple-fan specification. Hidden circuitry is a
+// teaching reconstruction: this is not a PCB scan or a manufacturing CAD file.
+function buildCard({
+  THREE,
+  palette,
+  objects,
+  world,
+  group,
+  mat,
+  box,
+  cylinder,
+  line,
+  tube,
+  label,
+  layer,
+  tile,
+  labels
+}) {
+  const L = 14.975,
+  W = 6,
+  gpuX = - 3.2;
+  const shell = 'shell',
+  rubber = 'rubber',
+  silver = 'silver',
+  ink = 'ink';
+  // A perforated plate is real geometry. Holes reveal the objects behind it;
+  // black decals would incorrectly hide fins when the viewing angle changes.
+  function plate(parent, points, holes, y, thickness, key, id, opts = {}) {
+    const shape = new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x, - z)));
+    holes.forEach(h => {
+      const path = new THREE.Path();
+      if (h.circle) path.absarc(h.x, - h.z, h.r, 0, Math.PI * 2, true);
+      else h.forEach(([x, z], i) => i ? path.lineTo(x, - z): path.moveTo(x, - z));
+      path.closePath();
+      shape.holes.push(path);
+    });
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: thickness,
+      bevelEnabled: false,
+      curveSegments: 56
+    });
+    geo.rotateX(- Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, mat(key, {
+      roughness: .5,
+      metalness: .5,
+      ...opts
+    }));
+    mesh.position.y = y;
+    mesh.userData.id = id;
+    parent.add(mesh);
+    if (id) objects.push(mesh);
+    return mesh;
+  }
+  // Repeated fins, solder balls and passive components share one draw call
+  // per batch. Instance transforms still preserve the individual geometry.
+  function instances(parent, geometry, placements, key, id, opts = {}) {
+    const mesh = new THREE.InstancedMesh(geometry, mat(key, opts), placements.length);
+    const transform = new THREE.Object3D();
+    placements.forEach((p, i) => {
+      transform.position.set(p[0], p[1], p[2]);
+      transform.scale.set(p[3] || 1, p[4] || 1, p[5] || 1);
+      transform.rotation.set(0, 0, 0);
+      transform.updateMatrix();
+      mesh.setMatrixAt(i, transform.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
+    mesh.userData.id = id;
+    parent.add(mesh);
+    if (id) objects.push(mesh);
+    return mesh;
+  }
+  function print(parent, text, x, y, z, width, back = false, size = 76) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1536;
+    canvas.height = 192;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = palette.ink;
+    ctx.font = '500 ' + size + 'px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const measured = ctx.measureText(text).width;
+    ctx.save();
+    ctx.translate(768, 96);
+    ctx.scale(1430 / Math.max(1, measured), 1);
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, width /(text === 'PNY' ? 4: text.length === 1 ? 1.3: 8)), new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    }));
+    mesh.rotation.x = back ? Math.PI / 2: - Math.PI / 2;
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    labels.push(mesh);
+    return mesh;
+  }
+  function screw(parent, x, y, z, back = false) {
+    cylinder(parent, .075, .026, x, y, z, silver, null);
+    box(parent, .094, .004, .016, x, y +(back ? - .016: .016), z, rubber, null);
+    box(parent, .016, .004, .094, x, y +(back ? - .016: .016), z, rubber, null);
+  }
+  // Board outline and component locations under the cooler are illustrative.
+  // The short board leaves a path through the cooler's far-end backplate vents.
+  const pcb = group('pcb');
+  plate(pcb, [[- 7.24, - 2.81], [1.36, - 2.81], [1.68, - 2.49], [1.68, 2.61], [- 2.05, 2.61], [- 2.05, 2.86], [- 7.24, 2.86]], [], - .04, .08, 'pcbblack', 'pcb');
+  const edge = group('pcie');
+  plate(edge, [[- 6.98, 2.8], [- 2.26, 2.8], [- 2.26, 3.19], [- 2.42, 3.32], [- 6.26, 3.32], [- 6.26, 2.88], [- 6.37, 2.88], [- 6.37, 3.32], [- 6.98, 3.32]], [], - .04, .08, 'pcbblack', 'pcie');
+  const contacts = [];
+  for (let side of[- 1, 1]) for (let i = 0; i < 82; i ++) {
+    contacts.push([- 6.9 + i * .052 +(i >= 11 ? .12: 0), side * .046, 3.075]);
+  }
+  instances(edge, new THREE.BoxGeometry(.034, .008, .35), contacts, 'gold', 'pcie', {
+    metalness: .78,
+    roughness: .3
+  });
+  // Deterministic grids represent solder/decoupling density, not a recovered
+  // netlist. No decorative trace is advertised as an actual electrical route.
+  const passives = group('caps'),
+  passiveBody = [],
+  passiveEnds = [],
+  backBody = [],
+  backEnds = [];
+  for (let row = 0; row < 25; row ++) for (let col = 0; col < 46; col ++) {
+    const x = - 7.0 + col * .182,
+    z = - 2.52 + row * .21;
+    const nearGPU = Math.abs(x - gpuX) < 1.48 && Math.abs(z) < 1.45;
+    const nearMemory = x > - 5.25 && x < - .95 && Math.abs(z) > 1.3 && Math.abs(z) < 2.34;
+    const nearVRM = x > - .56 && x < 1.45;
+    if (nearGPU || nearMemory || nearVRM ||(row * 7 + col * 13) % 9 > 3) continue;
+    passiveBody.push([x, .083, z]);
+    passiveEnds.push([x - .045, .083, z], [x + .045, .083, z]);
+  }
+  for (let row = 0; row < 13; row ++) for (let col = 0; col < 15; col ++) {
+    const x = gpuX - .77 + col * .11,
+    z = - .69 + row * .115;
+    if ((row * 3 + col) % 5 === 0) continue;
+    backBody.push([x, - .092, z]);
+    backEnds.push([x - .029, - .092, z], [x + .029, - .092, z]);
+  }
+  instances(passives, new THREE.BoxGeometry(.071, .047, .043), passiveBody, 'ceramic', 'caps');
+  instances(passives, new THREE.BoxGeometry(.019, .048, .045), passiveEnds, silver, 'caps');
+  instances(passives, new THREE.BoxGeometry(.044, .032, .042), backBody, 'ceramic', 'caps');
+  instances(passives, new THREE.BoxGeometry(.012, .034, .043), backEnds, silver, 'caps');
+  for (let i = 0; i < 18; i ++) {
+    const z = - 2.45 + i * .28;
+    line(pcb, [[- 6.83, .042, z], [- 6.22, .042, z], [- 5.56, .042, z * .66]], 'trace', .38);
+  }
+  const via = [];
+  for (let i = 0; i < 94; i ++) via.push([- 7.05 + i * .086, .043, - 2.65]);
+  instances(pcb, new THREE.CylinderGeometry(.018, .018, .008, 8), via, 'gold', 'pcb');
+  for (let x of[- 6.98, 1.19]) for (let z of[- 2.51, 2.48]) {
+    cylinder(pcb, .094, .012, x, .048, z, 'gold', 'pcb');
+    cylinder(pcb, .049, .016, x, .057, z, rubber, null);
+  }
+  print(pcb, 'GB205 · BOARD LAYOUT ILLUSTRATIVE', - 3.1, .045, 2.5, 3.2, false, 59);
+  const substrate = group('substrate', gpuX, .095, 0);
+  box(substrate, 2.24, .09, 2.24, 0, 0, 0, 'packagegreen', 'substrate');
+  layer(substrate, .36);
+  const solder = group('bga', gpuX, .039, 0),
+  balls = [];
+  for (let r = 0; r < 23; r ++) for (let c = 0; c < 23; c ++) {
+    if (Math.abs(r - 11) < 5 && Math.abs(c - 11) < 5) continue;
+    balls.push([(c - 11) * .087, 0, (r - 11) * .087]);
+  }
+  instances(solder, new THREE.SphereGeometry(.025, 8, 6), balls, silver, 'bga', {
+    metalness: .9,
+    roughness: .25
+  });
+  layer(solder, .2);
+  const die = group('die', gpuX, .18, 0);
+  box(die, .88, .07, .747, 0, 0, 0, 'silicon', 'die', {
+    metalness: .87,
+    roughness: .18
+  });
+  layer(die, .65);
+  // The footprint suggests the documented die area at this scale; its aspect
+  // ratio is approximate because this is not a measured package photograph.
+  const perimeter = [];
+  for (let side of[- 1, 1]) for (let i = 0; i < 12; i ++) perimeter.push([- .96 + i * .173, .057, side * .94]);
+  instances(substrate, new THREE.BoxGeometry(.055, .024, .033), perimeter, 'ceramic', 'substrate');
+  const memory = group('vram'),
+  pad = group('pads');
+  for (let x of[- 4.82, - 3.2, - 1.58]) for (let z of[- 1.85, 1.85]) {
+    box(memory, .88, .105, .68, x, .106, z, rubber, 'vram', {
+      roughness: .8
+    });
+    print(memory, 'GDDR7', x, .162, z, .76, false, 73);
+    box(pad, .9, .044, .7, x, .19, z, 'padgray', 'pads');
+  }
+  layer(pad, 1.35);
+  const mos = group('mosfet'),
+  chokes = group('choke'),
+  vrm = group('vrm');
+  for (let i = 0; i < 8; i ++) {
+    const z = - 2.28 + i * .64;
+    box(mos, .36, .065, .29, - .36, .105, z, rubber, 'mosfet');
+    box(chokes, .4, .27, .4, .2, .185, z, 'chokegray', 'choke');
+    print(chokes, 'R', .2, .327, z, .24, false, 83);
+    cylinder(passives, .105, .23, .87, .155, z, silver, 'caps');
+    box(pad, .92, .04, .47, - .03, .346, z, 'padgray', 'pads');
+  }
+  box(vrm, .3, .045, .3, - .56, .08, - 2.57, rubber, 'vrm');
+  const shunt = group('shunt', - .26, .08, - 1.94);
+  box(shunt, .29, .04, .15, 0, 0, 0, silver, 'shunt');
+  print(shunt, 'R005', 0, .024, 0, .24, false, 76);
+  const bios = group('bios', - 6.52, .09, 1.78);
+  box(bios, .29, .07, .27, 0, 0, 0, rubber, 'bios');
+  for (let i = 0; i < 4; i ++) for (let side of[- 1, 1]) box(bios, .038, .029, .09, - .112 + i * .074, 0, side * .164, silver, 'bios');
+  // The 16-pin socket has twelve larger power contacts and four smaller sense
+  // contacts. Its location is matched approximately to the supplied photos.
+  const power = group('power', - .93, .235, - 2.64);
+  box(power, 1.05, .58, .52, 0, 0, 0, rubber, 'power');
+  box(power, .33, .09, .27, 0, .331, - .02, rubber, 'power');
+  for (let row = 0; row < 2; row ++) for (let col = 0; col < 6; col ++) {
+    const x = - .413 + col * .165,
+    y = - .16 + row * .23;
+    box(power, .125, .158, .037, x, y, - .278, 'cavity', 'power');
+    box(power, .047, .068, .017, x, y, - .303, 'gold', 'power');
+  }
+  for (let i = 0; i < 4; i ++) {
+    box(power, .067, .055, .035, - .16 + i * .107, .201, - .279, 'cavity', 'power');
+    box(power, .024, .022, .015, - .16 + i * .107, .201, - .301, 'gold', 'power');
+  }
+  // Metal I/O bracket with actual openings instead of painted rectangles.
+  // Published configuration: three DisplayPort outputs plus one HDMI output.
+  const io = group('ports', - 7.49, 0, 0),
+  bracket = new THREE.Group();
+  io.add(bracket);
+  bracket.rotation.z = Math.PI / 2;
+  const portZ = [- 1.97, - .72, .53, 1.78];
+  const bracketHoles = portZ.map(z =>[[.19, z - .47], [.67, z - .47], [.67, z + .47], [.19, z + .47]]);
+  for (let r = 0; r < 3; r ++) for (let c = 0; c < 13; c ++) {
+    const cx = 1.05 + r * .31,
+    cz = - 2.63 + c * .432,
+    hex = [];
+    for (let a = 0; a < 6; a ++) hex.push([cx + Math.cos(a * Math.PI / 3) * .128, cz + Math.sin(a * Math.PI / 3) * .165]);
+    bracketHoles.push(hex);
+  }
+  plate(bracket, [[- .18, - 2.97], [1.96, - 2.97], [2.11, - 2.81], [2.11, 2.8], [1.91, 2.97], [- .18, 2.97]], bracketHoles, 0, .035, silver, 'ports', {
+    metalness: .76,
+    roughness: .32
+  });
+  portZ.forEach((z, i) => {
+    const frame = new THREE.Group();
+    frame.rotation.z = Math.PI / 2;
+    io.add(frame);
+    const out = [[.13, z - .51], [.72, z - .51], [.72, z + .51], [.13, z + .51]];
+    const hole = i === 3 ?[[.22, z - .39], [.49, z - .45], [.63, z - .32], [.63, z + .32], [.49, z + .45], [.22, z + .39]]: [[.22, z - .4], [.6, z - .4], [.64, z + .32], [.53, z + .42], [.22, z + .42]];
+    plate(frame, out, [hole], - .47, .48, silver, 'ports', {
+      metalness: .8,
+      roughness: .26
+    });
+    box(io, .19, .13, .73, .33, .43, z, rubber, 'ports');
+    for (let p = 0; p < 10; p ++) box(io, .07, .012, .032, .201, .503, z - .31 + p * .068, 'gold', 'ports');
+  });
+  box(io, .25, .047, .38, .08, 2.095, - 2.72, silver, 'ports');
+  box(io, .25, .047, .38, .08, 2.095, 2.72, silver, 'ports');
+  const tim = group('tim', gpuX, .221, 0);
+  box(tim, .877, .012, .744, 0, 0, 0, 'pastegray', 'tim', {
+    roughness: .99
+  });
+  layer(tim, .91);
+  const cold = group('coldplate', gpuX, .32, 0);
+  box(cold, 2.39, .19, 2.39, 0, 0, 0, silver, 'coldplate', {
+    metalness: .85,
+    roughness: .22
+  });
+  for (let x of[- 1.01, 1.01]) for (let z of[- 1.01, 1.01]) screw(cold, x, .11, z);
+  layer(cold, 1.8);
+  const pipes = group('heatpipes', 0, .5, 0);
+  for (let i = 0; i < 4; i ++) {
+    const z = - .72 + i * .48;
+    tube(pipes, [[- 6.85, .0, z + .24], [- 5.9, .01, z + .24], [- 4.5, .0, z], [- 3.2, .0, z], [- 1.3, .06, z], [.8, .07, z + .3], [4.9, .12, z + .3], [6.8, .18, z + .12]], .081, silver, 'heatpipes');
+  }
+  layer(pipes, 2.5);
+  const fins = group('heatsink'),
+  finPositions = [];
+  for (let i = 0; i < 68; i ++) finPositions.push([- 7.06 + i * .091, 1.15, 0]);
+  for (let i = 0; i < 81; i ++) finPositions.push([- .4 + i * .091, 1.15, 0]);
+  instances(fins, new THREE.BoxGeometry(.021, 1.34, 5.37), finPositions, silver, 'heatsink', {
+    metalness: .69,
+    roughness: .39
+  });
+  for (let z of[- 2.52, 2.52]) box(fins, 14.21, .065, .11, 0, .491, z, silver, 'heatsink');
+  layer(fins, 3.55);
+  // Three axial fans are independent rotors. The curved extruded blades have
+  // thickness, a swept tip and hub attachment rather than flat triangles.
+  const fans = group('fan', 0, 1.995, 0),
+  shroud = group('shroud', 0, 0, 0);
+  const centers = [- 4.83, 0, 4.83];
+  centers.forEach((x, fanIndex) => {
+    const rotor = new THREE.Group();
+    rotor.position.x = x;
+    rotor.userData.fanIndex = fanIndex;
+    fans.add(rotor);
+    cylinder(rotor, .48, .205, 0, 0, 0, rubber, 'fan');
+    cylinder(rotor, .388, .017, 0, .113, 0, shell, 'fan');
+    print(rotor, 'PNY', 0, .127, 0, .63, false, 100);
+    for (let b = 0; b < 9; b ++) {
+      const shape = new THREE.Shape();
+      shape.moveTo(.39, - .14);
+      shape.bezierCurveTo(.72, - .4, 1.23, - .74, 2.11, - .54);
+      shape.quadraticCurveTo(2.2, - .29, 2.12, .04);
+      shape.bezierCurveTo(1.52, - .12, .92, .32, .44, .18);
+      shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, {
+        depth: .037,
+        bevelEnabled: true,
+        bevelSegments: 1,
+        steps: 1,
+        bevelSize: .012,
+        bevelThickness: .008,
+        curveSegments: 12
+      });
+      geo.rotateX(- Math.PI / 2);
+      const blade = new THREE.Mesh(geo, mat(rubber, {
+        roughness: .44,
+        metalness: .22
+      }));
+      blade.rotation.y = b * Math.PI * 2 / 9;
+      blade.userData.id = 'fan';
+      rotor.add(blade);
+      objects.push(blade);
+    }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.24, .047, 8, 96), mat(shell, {
+      roughness: .45
+    }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(x, 2.115, 0);
+    ring.userData.id = 'shroud';
+    shroud.add(ring);
+    objects.push(ring);
+    // Motor struts attach to the frame, so they stay put when fans are separated.
+    for (let j = 0; j < 3; j ++) {
+      const a = j * Math.PI * 2 / 3 + .27;
+      const strut = box(shroud, 1.97, .058, .079, x + Math.cos(a) * 1.2, 1.827, Math.sin(a) * 1.2, rubber, 'shroud');
+      strut.rotation.y = - a;
+    }
+  });
+  const shroudOutline = [[- 7.48, - 2.61], [- 7.1, - 2.97], [7.12, - 2.97], [7.48, - 2.58], [7.48, 2.59], [7.11, 2.97], [- 7.1, 2.97], [- 7.48, 2.6]];
+  plate(shroud, shroudOutline, centers.map(x =>({
+    circle: true,
+    x,
+    z: 0,
+    r: 2.26
+  })), 2.102, .084, shell, 'shroud', {
+    roughness: .61,
+    metalness: .3
+  });
+  for (let z of[- 2.93, 2.93]) {
+    box(shroud, 14.26, .34, .082, 0, 1.93, z, shell, 'shroud');
+    for (let x of[- 6.81, - 2.52, 2.51, 6.79]) {
+      const rib = box(shroud, .72, .036, .12, x, 2.198, z * .91, 'trim', 'shroud');
+      rib.rotation.y = x < 0 ? - .42: .42;
+    }
+  }
+  for (let x of[- 7.37, 7.37]) box(shroud, .095, .61, 4.75, x, 1.84, 0, shell, 'shroud');
+  const sideText = print(shroud, 'GEFORCE RTX 5070', 2.36, 1.885, - 2.977, 6.83, false, 108);
+  sideText.rotation.x = Math.PI;
+  // vertical outer side, facing the power cable
+  const sideBrand = print(shroud, 'PNY', - 5.35, 1.885, - 2.977, 1.83, false, 128);
+  sideBrand.rotation.x = Math.PI;
+  for (let x of[- 7.09, 7.09]) for (let z of[- 2.51, 2.51]) screw(shroud, x, 2.205, z);
+  layer(fans, 5.25);
+  layer(shroud, 5.25);
+  // Photo-matched rear: GPU access opening, angular flow-through vents,
+  // PNY wordmark, fasteners, and the long GeForce label along the near edge.
+  const back = group('backplate', 0, - .2, 0);
+  const backOutline = [[- 7.39, - 2.61], [- 7.14, - 2.87], [7.12, - 2.87], [7.43, - 2.57], [7.43, 2.57], [7.11, 2.87], [- 7.13, 2.87], [- 7.39, 2.62]];
+  const backHoles = [[[gpuX - .99, - .89], [gpuX - .84, - 1.02], [gpuX + .89, - 1.02], [gpuX + 1.01, - .84], [gpuX + 1.01, .86], [gpuX + .84, 1.02], [gpuX - .84, 1.02], [gpuX - .99, .86]], [[3.51, - 2.31], [6.55, - 1.72], [3.86, .54]], [[3.94, 1.93], [6.94, - .11], [6.96, 2.36]]];
+  plate(back, backOutline, backHoles, 0, .058, shell, 'backplate', {
+    roughness: .49,
+    metalness: .65
+  });
+  print(back, 'PNY', .67, - .006, - .12, 2.4, true, 128);
+  print(back, 'GEFORCE RTX 5070', - 4.51, - .009, 2.12, 4.6, true, 105);
+  // Fine diagonal etching follows the visual motif in the supplied photos.
+  for (let i = 0; i < 34; i ++) {
+    const x = - 6.94 + i * .126;
+    line(back, [[x, - .006, - 2.45], [Math.min(x + .97, - 2.25), - .006, - 1.43]], 'etch', .24);
+  }
+  for (const[x, z] of[[- 7.1, - 2.52], [- 7.1, 2.52], [1.66, - 2.5], [1.66, 2.5], [7.13, - 2.4], [7.13, 2.4], [- 4.4, - 1.17], [- 2.0, - 1.17], [- 4.4, 1.17], [- 2.0, 1.17]]) screw(back, x, - .024, z, true);
+  layer(back, - 2.55);
+}
+
+return { buildCard };
+})();
+// src/scene/primitives.js
+__modules["src/scene/primitives.js"] = (() => {
+
+/**
+* Shared geometry helpers for one scene build.
+* Each build owns its registries so discarded meshes cannot remain pickable.
+* `parts`: component ID -> groups; `objects`: raycast targets;
+* `motions`: base position + explosion displacement; `labels`: texture planes.
+*/
+function createPrimitives({
+  THREE,
+  palette,
+  world,
+  parts,
+  objects,
+  motions,
+  labels
+}) {
+  function group(id, x = 0, y = 0, z = 0) {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    g.userData.id = id;
+    if (id) {
+      parts[id] = parts[id] || [];
+      parts[id].push(g);
+    }
+    world.add(g);
+    return g;
+  }
+  function mat(key, opts = {}) {
+    return new THREE.MeshStandardMaterial({
+      color: palette[key] || key,
+      roughness: .58,
+      metalness: .25,
+      ...opts
+    });
+  }
+  function box(parent, w, h, d, x, y, z, key, id, opts = {}) {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mesh = new THREE.Mesh(geo, mat(key, opts));
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    if (id) {
+      mesh.userData.id = id;
+      objects.push(mesh);
+    }
+    return mesh;
+  }
+  function cylinder(parent, r, h, x, y, z, key, id, r2) {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r2 === undefined ? r: r2, h, 32), mat(key, {
+      metalness: .55
+    }));
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    if (id) {
+      mesh.userData.id = id;
+      objects.push(mesh);
+    }
+    return mesh;
+  }
+  function line(parent, pts, key = 'circuit', opacity = .6) {
+    const geometry = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
+    const l = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+      color: palette[key],
+      transparent: true,
+      opacity
+    }));
+    parent.add(l);
+    return l;
+  }
+  function tube(parent, pts, r, key, id) {
+    const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)));
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, r, 8, false), mat(key, {
+      metalness: .8,
+      roughness: .28
+    }));
+    parent.add(mesh);
+    if (id) {
+      mesh.userData.id = id;
+      objects.push(mesh);
+    }
+    return mesh;
+  }
+  function label(parent, text, x, y, z, width = 2, key = 'fg') {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = palette[key];
+    ctx.font = '500 42px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 256, 48);
+    const texture = new THREE.CanvasTexture(c);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, width * 96 / 512), new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    }));
+    m.rotation.x = - Math.PI / 2;
+    m.position.set(x, y, z);
+    parent.add(m);
+    labels.push(m);
+    return m;
+  }
+  function layer(g, dy, dx = 0, dz = 0) {
+    motions.push({
+      g,
+      base: g.position.clone(),
+      delta: new THREE.Vector3(dx, dy, dz)
+    });
+  }
+  function tile(id, x, z, w, d, text, key, yy = .25) {
+    const g = group(id, x, yy, z);
+    box(g, w, .3, d, 0, 0, 0, key, id);
+    if (text) label(g, text, 0, .17, 0, Math.min(w * .9, 2.1), 'fg');
+    return g;
+  }
+  return {
+    group,
+    mat,
+    box,
+    cylinder,
+    line,
+    tube,
+    label,
+    layer,
+    tile
+  };
+}
+
+return { createPrimitives };
+})();
+// src/data/components.js
+__modules["src/data/components.js"] = (() => {
+
+/**
+ * Canonical component IDs join educational content, meshes, and quizzes.
+ * Edit this file to improve an explanation without touching rendering code.
+ * Role = what it does; ml = why a learner should care; deeper = qualifications.
+ */
+const components = {
+  "die": {
+    "id": "die",
+    "level": "card",
+    "name": "GPU die",
+    "category": "Compute",
+    "fact": "GB205 · 263 mm² · 31.1 billion transistors",
+    "role": "The silicon chip where instructions execute. Compute engines, caches, memory controllers and graphics hardware share this die. The whole graphics card supports this small piece of silicon.",
+    "ml": "Your CUDA kernels run here. A fast GPU still waits if its work arrives late or its arithmetic units cannot obtain operands.",
+    "deeper": "A die is fabricated on a wafer, cut out, and attached to a package. This viewer shows functional blocks; their drawn positions are not NVIDIA’s physical floorplan.",
+    "links": [
+      "substrate",
+      "vram",
+      "sm",
+      "tim"
+    ],
+    "dive": [
+      "chip",
+      "sm",
+      "Open the chip →"
+    ]
+  },
+  "pcb": {
+    "id": "pcb",
+    "level": "card",
+    "name": "Printed circuit board",
+    "category": "Interconnect",
+    "fact": "Short multilayer PCB · hidden layout is illustrative",
+    "role": "Copper routes inside an insulating board carry signals and power between the GPU package, memory chips, regulators and connectors. Ground and power planes provide low-impedance return paths.",
+    "ml": "Signal integrity and power delivery make high-speed computation possible. This is hardware infrastructure beneath the CUDA software stack.",
+    "deeper": "The visible green surface is solder mask. Most connections travel through internal layers and plated vias, rather than along the decorative traces visible here.",
+    "links": [
+      "pcie",
+      "substrate",
+      "vrm"
+    ]
+  },
+  "substrate": {
+    "id": "substrate",
+    "level": "card",
+    "name": "Package substrate",
+    "category": "Interconnect",
+    "fact": "Fine die connections → larger board connections",
+    "role": "This small carrier beneath the die spreads dense electrical connections out to the PCB. It also mechanically supports the die and routes power into it.",
+    "ml": "Package routing and power integrity constrain real chips, even though a PyTorch tensor never exposes the package to you.",
+    "deeper": "The package is not an additional processor. The die attaches to the substrate, which connects to the board through an array of solder balls.",
+    "links": [
+      "die",
+      "bga",
+      "pcb"
+    ]
+  },
+  "bga": {
+    "id": "bga",
+    "level": "card",
+    "name": "Solder-ball array",
+    "category": "Interconnect",
+    "fact": "BGA · illustrative solder-joint grid",
+    "role": "An array of tiny solder joints connects the GPU package to the board for power, ground and signals. The balls appear when the package is lifted.",
+    "ml": "This is the physical electrical connection for transfers between the GPU and components elsewhere on the card.",
+    "deeper": "The count and spacing drawn here are illustrative. Individual balls are not separate compute cores or memory cells.",
+    "links": [
+      "substrate",
+      "pcb"
+    ]
+  },
+  "vram": {
+    "id": "vram",
+    "level": "card",
+    "name": "GDDR7 memory",
+    "category": "Memory",
+    "fact": "12 GB · 192-bit bus · 672 GB/s peak",
+    "role": "These separate DRAM packages hold weights, activations, gradients, images and other device data. Capacity describes how much fits; bandwidth describes how quickly bytes can move.",
+    "ml": "A CUDA out-of-memory error generally concerns allocations backed by this memory. The example system’s 32 GB of DDR5 is a separate pool.",
+    "deeper": "Six packages illustrate a 12 GB card. GDDR7 uses PAM3 signaling. Theoretical bandwidth is 28 Gbit/s × 192 ÷ 8 = 672 GB/s; a real kernel will not necessarily reach it.",
+    "links": [
+      "controller",
+      "l2",
+      "ram"
+    ]
+  },
+  "vrm": {
+    "id": "vrm",
+    "level": "card",
+    "name": "Voltage controller",
+    "category": "Power",
+    "fact": "Multiphase voltage regulation",
+    "role": "The controller measures the output voltage and commands power stages to keep it near its target as GPU demand changes. Several phases share the load.",
+    "ml": "A training workload can draw sustained power very differently from short interactive work. Stable supply and adequate cooling matter for repeatable measurements.",
+    "deeper": "The controller, switching stages, inductors and capacitors form the VRM. The number of phases here is illustrative, not a claim about your board.",
+    "links": [
+      "mosfet",
+      "choke",
+      "caps",
+      "power"
+    ]
+  },
+  "mosfet": {
+    "id": "mosfet",
+    "level": "card",
+    "name": "Switching power stages",
+    "category": "Power",
+    "fact": "Rapid switching · voltage step-down",
+    "role": "Power transistors rapidly switch the supply. With the inductors and capacitors, they convert input power into the lower-voltage, high-current rails needed by the GPU and memory.",
+    "ml": "Power conversion produces heat of its own. A compute workload stresses more than the silicon die.",
+    "deeper": "Each illustrated phase has a switching stage and inductor. Actual boards may integrate the driver and MOSFETs in one package.",
+    "links": [
+      "vrm",
+      "choke",
+      "pads"
+    ]
+  },
+  "choke": {
+    "id": "choke",
+    "level": "card",
+    "name": "Inductors / chokes",
+    "category": "Power",
+    "fact": "Energy stored in a magnetic field",
+    "role": "An inductor opposes abrupt changes in current. It smooths the switched output of a power stage while storing and releasing magnetic energy.",
+    "ml": "These components help deliver steady current during changing workloads. Their role is electrical, not computation or data storage.",
+    "deeper": "Multiple phases stagger their switching to share current and reduce ripple. Exact phase count and switching frequency depend on the board.",
+    "links": [
+      "mosfet",
+      "caps",
+      "vrm"
+    ]
+  },
+  "caps": {
+    "id": "caps",
+    "level": "card",
+    "name": "Capacitors",
+    "category": "Power",
+    "fact": "Local charge reservoirs",
+    "role": "Capacitors supply and absorb charge during fast changes in demand, reducing voltage ripple and noise near the GPU and memory.",
+    "ml": "Stable voltage helps the hardware operate reliably while many execution units change activity at once.",
+    "deeper": "Large capacitors and small ceramic decoupling capacitors work over different frequency ranges. The small beige blocks and larger cylinders represent these roles.",
+    "links": [
+      "choke",
+      "die",
+      "vram"
+    ]
+  },
+  "shunt": {
+    "id": "shunt",
+    "level": "card",
+    "name": "Current-sense resistor",
+    "category": "Power",
+    "fact": "Tiny resistance · measurable voltage drop",
+    "role": "A very low-value resistor lets monitoring circuitry estimate current by measuring the voltage across it.",
+    "ml": "Power telemetry helps interpret a sustained benchmark. A reported power limit can explain why clocks stop increasing.",
+    "deeper": "Ohm’s law relates voltage drop to current. Real boards have their own sensor placement, calibration and reporting intervals.",
+    "links": [
+      "power",
+      "vrm",
+      "clock"
+    ]
+  },
+  "power": {
+    "id": "power",
+    "level": "card",
+    "name": "Auxiliary power connector",
+    "category": "Power",
+    "fact": "RTX 5070 reference board power: 250 W",
+    "role": "The cable connector brings power from the computer’s PSU to the graphics card. It complements the power available from the PCIe slot.",
+    "ml": "The 250 W specification is total graphics power, not a constant draw and not a performance score.",
+    "deeper": "PNY specifies one 16-pin input. Twelve large contacts carry power and four smaller contacts provide sensing. Its location follows your photo approximately; cable geometry is omitted so the socket is visible.",
+    "links": [
+      "shunt",
+      "vrm",
+      "pcie"
+    ]
+  },
+  "pcie": {
+    "id": "pcie",
+    "level": "card",
+    "name": "PCI Express edge connector",
+    "category": "Interconnect",
+    "fact": "PCIe 5.0 · host ↔ device link",
+    "role": "These gold contacts connect the card to the motherboard for commands, data transfers and power. PCIe traffic is distinct from traffic between the GPU and its own GDDR7 memory.",
+    "ml": "Repeated CPU ↔ GPU transfers can dominate a short training step. Keep reusable data on the device and measure copy time separately.",
+    "deeper": "The usable link depends on the motherboard slot, lane allocation and negotiated generation. PCIe bandwidth does not add to VRAM bandwidth.",
+    "links": [
+      "host",
+      "copy",
+      "vram"
+    ]
+  },
+  "ports": {
+    "id": "ports",
+    "level": "card",
+    "name": "Display outputs & bracket",
+    "category": "I/O",
+    "fact": "3 × DisplayPort 2.1b · 1 × HDMI 2.1b",
+    "role": "Output connectors carry display signals to monitors. The metal bracket secures the card to the case and provides the external mounting face.",
+    "ml": "A desktop display can share the GPU with your experiments. Display outputs are not the route used to upload training tensors.",
+    "deeper": "PNY lists three DisplayPort 2.1b outputs and one HDMI 2.1b output. Socket order and small mechanical details in this reconstruction are approximate. The display engine on the die scans out frame buffers and feeds the physical output links.",
+    "links": [
+      "display",
+      "pcb"
+    ]
+  },
+  "bios": {
+    "id": "bios",
+    "level": "card",
+    "name": "Firmware flash",
+    "category": "Control",
+    "fact": "Persistent board configuration",
+    "role": "A small nonvolatile memory chip stores firmware and board configuration needed during initialization. It retains data when power is removed.",
+    "ml": "Firmware helps establish how the board starts up. Your model checkpoints and CUDA programs are not stored in this flash chip.",
+    "deeper": "Firmware, the host driver and on-chip controllers have different jobs. Firmware does not replace CUDA, PyTorch or the operating system.",
+    "links": [
+      "frontend",
+      "clock",
+      "pcb"
+    ]
+  },
+  "tim": {
+    "id": "tim",
+    "level": "card",
+    "name": "Thermal interface material",
+    "category": "Cooling",
+    "fact": "Die → cold plate",
+    "role": "A thin interface fills microscopic gaps between the die and cooler. This reduces resistance to heat moving out of the chip.",
+    "ml": "Poor heat transfer can affect sustained clock speeds and cause benchmark performance to drift after warm-up.",
+    "deeper": "The interface is drawn as a visible layer so you can select it; its real thickness is far smaller. It carries heat, not instructions.",
+    "links": [
+      "die",
+      "coldplate"
+    ]
+  },
+  "pads": {
+    "id": "pads",
+    "level": "card",
+    "name": "Thermal pads",
+    "category": "Cooling",
+    "fact": "Memory / power stages → cooler",
+    "role": "Compliant pads bridge gaps between selected board components and cooling surfaces. They transfer heat from memory and power circuitry.",
+    "ml": "Your GPU core temperature does not describe every hot component on the board. Sustained workloads also heat the memory and VRM.",
+    "deeper": "The model groups pads by function. Their exact placement and thickness are specific to a board’s mechanical design.",
+    "links": [
+      "vram",
+      "mosfet",
+      "heatsink"
+    ]
+  },
+  "coldplate": {
+    "id": "coldplate",
+    "level": "card",
+    "name": "Cold plate",
+    "category": "Cooling",
+    "fact": "Heat pickup at the chip",
+    "role": "The metal surface nearest the die collects heat and spreads it into the cooling assembly.",
+    "ml": "Heat removed here ultimately reaches the room. A cooler’s job is to sustain operation within the card’s thermal limits.",
+    "deeper": "Some cards use vapor chambers, others heat pipes or combinations. The visible cooler envelope follows PNY’s triple-fan design. The hidden cold plate and heat-pipe paths are reconstructions; their exact construction has not been verified for your board.",
+    "links": [
+      "tim",
+      "heatpipes",
+      "heatsink"
+    ]
+  },
+  "heatpipes": {
+    "id": "heatpipes",
+    "level": "card",
+    "name": "Heat pipes",
+    "category": "Cooling",
+    "fact": "Phase-change heat transport",
+    "role": "Inside a sealed pipe, working fluid evaporates near a hot region and condenses near a cooler region, transporting heat toward the fins.",
+    "ml": "Heat pipes help spread a concentrated die heat load across a much larger heat sink.",
+    "deeper": "The pipes are not coolant hoses attached to a pump. The wick and fluid are inside; the external curves are schematic.",
+    "links": [
+      "coldplate",
+      "heatsink"
+    ]
+  },
+  "heatsink": {
+    "id": "heatsink",
+    "level": "card",
+    "name": "Heat-sink fins",
+    "category": "Cooling",
+    "fact": "Large surface area for convection",
+    "role": "Thin metal fins provide more surface area for transferring heat into moving air. They receive heat from the cold plate and heat pipes.",
+    "ml": "Warm-up matters: the cooling assembly takes time to approach a steady thermal state during profiling.",
+    "deeper": "The denser fin stack follows the visible side profile. Its fin count, spacing and hidden cutouts remain representative. Heat ultimately leaves through convection and the case’s airflow path.",
+    "links": [
+      "fan",
+      "heatpipes"
+    ]
+  },
+  "fan": {
+    "id": "fan",
+    "level": "card",
+    "name": "Fans",
+    "category": "Cooling",
+    "fact": "Three axial fans · PNY exterior reference",
+    "role": "Motor-driven blades push air through and around the fins, carrying heat away from the card.",
+    "ml": "Fan response affects temperatures and sustained clocks. Thermal behavior can make a long run differ from a short microbenchmark.",
+    "deeper": "Fans are shown stationary for inspection. Three fan assemblies follow the PNY triple-fan product reference. Blade curvature and motor details are approximations; the photo does not establish an exact SKU.",
+    "links": [
+      "heatsink",
+      "shroud",
+      "clock"
+    ]
+  },
+  "shroud": {
+    "id": "shroud",
+    "level": "card",
+    "name": "Fan frame / shroud",
+    "category": "Cooling",
+    "fact": "Mechanical support & airflow guidance",
+    "role": "The frame holds fans and helps guide air through the cooling assembly. It also protects parts of the cooler.",
+    "ml": "Its effect is indirect: airflow and obstruction influence cooling, which can affect sustained performance.",
+    "deeper": "The angular black frame follows the PNY exterior reference. Separate the layers to expose the cooler beneath it. Select Isolate part to examine it without other components.",
+    "links": [
+      "fan",
+      "heatsink",
+      "backplate"
+    ]
+  },
+  "backplate": {
+    "id": "backplate",
+    "level": "card",
+    "name": "Backplate",
+    "category": "Structure",
+    "fact": "PNY metal backplate · photo-based exterior",
+    "role": "The rear plate protects the back of the PCB and adds stiffness. Some designs also use it as part of the thermal path.",
+    "ml": "A heavy cooler needs mechanical support. Whether the backplate meaningfully dissipates heat depends on its contacts and materials.",
+    "deeper": "This model avoids assuming that every backplate is an active heat sink. The two angular flow-through openings, GPU access cutout and lettering follow your photos; small dimensions and fastener positions are approximate.",
+    "links": [
+      "pcb",
+      "shroud"
+    ]
+  },
+  "frontend": {
+    "id": "frontend",
+    "level": "chip",
+    "name": "Command front end",
+    "category": "Control",
+    "fact": "Kernel / graphics work enters the GPU",
+    "role": "The GPU receives submitted work and dispatches it toward the appropriate engines. A kernel launch eventually becomes thread blocks scheduled on SMs.",
+    "ml": "Many tiny launches can cost more in overhead than useful GPU work. CUDA graphs and fusion can help in suitable workloads.",
+    "deeper": "This block represents command processing and work distribution, not a claim that every queue is one contiguous circuit.",
+    "links": [
+      "sm",
+      "copy",
+      "amp"
+    ]
+  },
+  "gpc": {
+    "id": "gpc",
+    "level": "chip",
+    "name": "Graphics processing cluster",
+    "category": "Compute organization",
+    "fact": "5 enabled GPCs",
+    "role": "A GPC groups compute and graphics resources. It contains TPCs and fixed-function graphics machinery.",
+    "ml": "CUDA exposes SMs and thread blocks more directly than GPC floorplans. Physical grouping still matters to some advanced hardware features.",
+    "deeper": "The model arranges five groups for readability. It is not a physical die photograph.",
+    "links": [
+      "tpc",
+      "raster",
+      "sm"
+    ]
+  },
+  "tpc": {
+    "id": "tpc",
+    "level": "chip",
+    "name": "Texture processing cluster",
+    "category": "Compute organization",
+    "fact": "24 enabled TPCs · 2 SMs per TPC",
+    "role": "A TPC is a hardware grouping containing two SMs and a PolyMorph engine. It is not a CUDA thread block.",
+    "ml": "A CUDA block is a software work group scheduled onto an SM; similarly named hardware clusters are a different hierarchy.",
+    "deeper": "GB205 has 25 TPC positions in the full design. One disabled TPC pair is placed illustratively in this model. Its actual physical position is not asserted.",
+    "links": [
+      "gpc",
+      "sm",
+      "polymorph"
+    ]
+  },
+  "sm": {
+    "id": "sm",
+    "level": "chip",
+    "name": "Streaming multiprocessor",
+    "category": "Compute",
+    "fact": "48 enabled SMs · 128 CUDA cores per SM",
+    "role": "An SM is a small parallel processor with schedulers, arithmetic units, registers and local memory. It hosts resident CUDA thread blocks.",
+    "ml": "Register use, shared-memory use and block size influence how much work can reside here simultaneously. More occupancy does not always mean more speed.",
+    "deeper": "Each SM has multiple execution resources. A CUDA core is an arithmetic lane inside this machine, not an independent CPU-like core.",
+    "links": [
+      "scheduler",
+      "registers",
+      "tensor",
+      "shared"
+    ],
+    "dive": [
+      "sm",
+      "scheduler",
+      "Inspect one SM →"
+    ]
+  },
+  "l2": {
+    "id": "l2",
+    "level": "chip",
+    "name": "L2 cache",
+    "category": "Memory",
+    "fact": "48 MB shared across the GPU",
+    "role": "An on-chip cache holds recently used data and mediates many requests between SMs and external memory. A hit avoids going all the way to GDDR7.",
+    "ml": "Data reuse can reduce external-memory traffic. Working-set size and access patterns determine how much this helps.",
+    "deeper": "The long central strip is an explanatory grouping of cache capacity, not its actual physical placement or slice count.",
+    "links": [
+      "fabric",
+      "controller",
+      "shared"
+    ]
+  },
+  "fabric": {
+    "id": "fabric",
+    "level": "chip",
+    "name": "On-chip interconnect",
+    "category": "Interconnect",
+    "fact": "Connects compute, memory and engines",
+    "role": "Internal routing carries requests and responses between units, including SMs, caches and I/O engines.",
+    "ml": "Moving data is real work even when it stays on the die. Contention and locality can influence a kernel’s throughput.",
+    "deeper": "Lines in this model indicate logical connectivity. They are not a reverse-engineered network topology or physical wire map.",
+    "links": [
+      "l2",
+      "sm",
+      "controller"
+    ]
+  },
+  "controller": {
+    "id": "controller",
+    "level": "chip",
+    "name": "Memory controllers & PHYs",
+    "category": "Memory",
+    "fact": "6 × 32-bit interfaces = 192 bits",
+    "role": "Controllers schedule external-memory requests; physical-interface circuitry sends and receives the high-speed electrical signals.",
+    "ml": "Contiguous, well-organized accesses use memory transactions more effectively than scattered requests from neighboring threads.",
+    "deeper": "The interfaces serve external GDDR7. They do not manage the CPU’s DDR5 modules. Requests can be satisfied by caches without reaching them.",
+    "links": [
+      "vram",
+      "l2",
+      "lsu"
+    ]
+  },
+  "copy": {
+    "id": "copy",
+    "level": "chip",
+    "name": "Copy engine",
+    "category": "Data movement",
+    "fact": "DMA · host ↔ device / device copies",
+    "role": "Copy hardware moves data without making CUDA arithmetic lanes perform every byte transfer.",
+    "ml": "Asynchronous copies and suitable streams can overlap movement with computation when dependencies and hardware allow it. Pinned host memory is relevant.",
+    "deeper": "Async does not mean every copy overlaps automatically. Actual copy-engine count and concurrency should be queried on the device.",
+    "links": [
+      "pcie",
+      "ram",
+      "frontend"
+    ]
+  },
+  "mmu": {
+    "id": "mmu",
+    "level": "chip",
+    "name": "Address translation / MMU",
+    "category": "Memory control",
+    "fact": "Virtual addresses → physical storage",
+    "role": "Memory-management hardware translates virtual addresses and enforces mappings. Translation caches avoid repeating expensive page-table walks.",
+    "ml": "A pointer is not a direct map to a particular memory chip. Unified-memory movement and access patterns can change performance.",
+    "deeper": "This groups MMU and translation-cache functions schematically. Unified addressing does not turn system RAM into equally fast local VRAM.",
+    "links": [
+      "vram",
+      "l2",
+      "ram"
+    ]
+  },
+  "amp": {
+    "id": "amp",
+    "level": "chip",
+    "name": "AI management processor",
+    "category": "Control",
+    "fact": "Workload management",
+    "role": "An on-chip management processor supports scheduling and coordination of AI and graphics workloads.",
+    "ml": "This hardware acronym AMP is different from PyTorch AMP, which means automatic mixed precision. The latter chooses arithmetic precision in software.",
+    "deeper": "Management processors do not replace SM arithmetic. This viewer does not infer unpublished firmware internals.",
+    "links": [
+      "frontend",
+      "clock",
+      "sm"
+    ]
+  },
+  "clock": {
+    "id": "clock",
+    "level": "chip",
+    "name": "Clock / power management",
+    "category": "Control",
+    "fact": "Dynamic operating point",
+    "role": "Control circuitry and sensors help regulate clocks, voltage and power in response to limits and activity.",
+    "ml": "Sustained performance depends on temperature, power limits and workload, not simply the advertised boost frequency.",
+    "deeper": "Clock domains and sensors are grouped as one conceptual block. GPU clocks need not remain fixed throughout a benchmark.",
+    "links": [
+      "shunt",
+      "fan",
+      "frontend"
+    ]
+  },
+  "raster": {
+    "id": "raster",
+    "level": "chip",
+    "name": "Raster engines",
+    "category": "Graphics",
+    "fact": "Primitives → pixel fragments",
+    "role": "Rasterization determines which screen samples are covered by geometric primitives such as triangles.",
+    "ml": "Ordinary neural-network matrix operations do not become faster merely because the card has more raster hardware.",
+    "deeper": "These engines serve the graphics pipeline alongside programmable shaders. The 3D explorer you are looking at uses graphics rendering.",
+    "links": [
+      "gpc",
+      "rop",
+      "polymorph"
+    ]
+  },
+  "polymorph": {
+    "id": "polymorph",
+    "level": "chip",
+    "name": "PolyMorph engines",
+    "category": "Graphics",
+    "fact": "Geometry processing",
+    "role": "These fixed-function resources handle geometry-related stages associated with TPCs, working with programmable graphics shaders.",
+    "ml": "They are part of why a gaming GPU contains hardware beyond CUDA and Tensor Cores. Most training code does not target them.",
+    "deeper": "The simplified geometry blocks are distinct from the SM’s matrix math and from the raster engine’s screen coverage work.",
+    "links": [
+      "tpc",
+      "raster"
+    ]
+  },
+  "rop": {
+    "id": "rop",
+    "level": "chip",
+    "name": "Raster operations units",
+    "category": "Graphics",
+    "fact": "80 ROPs",
+    "role": "ROPs handle final graphics operations such as depth/stencil processing and color blending before results reach a render target.",
+    "ml": "They are not the units running your loss function or Adam update. Graphics-specific throughput is a separate capability.",
+    "deeper": "Their placement here is schematic. A render target is normally backed by device memory, sharing a resource with compute workloads.",
+    "links": [
+      "raster",
+      "l2",
+      "display"
+    ]
+  },
+  "encode": {
+    "id": "encode",
+    "level": "chip",
+    "name": "NVENC video encoder",
+    "category": "Media",
+    "fact": "1 × ninth-generation encoder",
+    "role": "Dedicated circuitry compresses video frames into supported bitstreams, independently of the main CUDA compute units.",
+    "ml": "This can matter for video pipelines and recording. It is not a generic accelerator for neural-network training.",
+    "deeper": "Dedicated encoding may run alongside CUDA work, while still sharing memory bandwidth and power resources.",
+    "links": [
+      "decode",
+      "vram",
+      "display"
+    ]
+  },
+  "decode": {
+    "id": "decode",
+    "level": "chip",
+    "name": "NVDEC video decoder",
+    "category": "Media",
+    "fact": "1 × sixth-generation decoder",
+    "role": "Dedicated circuitry decompresses supported video streams into frames that other GPU operations can consume.",
+    "ml": "A video-ML pipeline can avoid expensive CPU decoding and unnecessary host transfers when its software uses this engine.",
+    "deeper": "Codec, profile and software support determine whether a particular stream uses hardware decoding.",
+    "links": [
+      "encode",
+      "vram",
+      "sm"
+    ]
+  },
+  "display": {
+    "id": "display",
+    "level": "chip",
+    "name": "Display engine",
+    "category": "I/O",
+    "fact": "Frame buffer → monitor",
+    "role": "Display hardware reads image buffers, applies supported display processing and drives the output interfaces.",
+    "ml": "Displaying a desktop and computing can coexist. The output engine is distinct from the compute units running your kernels.",
+    "deeper": "Rendering an image, encoding video, and scanning an image to a monitor are different jobs performed by different hardware paths.",
+    "links": [
+      "ports",
+      "rop",
+      "vram"
+    ]
+  },
+  "instruction": {
+    "id": "instruction",
+    "level": "sm",
+    "name": "Instruction caches",
+    "category": "Control",
+    "fact": "Common instruction cache + local caches",
+    "role": "Instruction caches retain executable instructions near the schedulers. They hold code rather than model weights.",
+    "ml": "A kernel’s machine instructions and its tensor data use different resources. A huge, complicated kernel can introduce instruction-side pressure.",
+    "deeper": "The layout groups the common cache at the top and local caches in each partition, following the functional SM diagram.",
+    "links": [
+      "scheduler",
+      "dispatch"
+    ]
+  },
+  "scheduler": {
+    "id": "scheduler",
+    "level": "sm",
+    "name": "Warp schedulers",
+    "category": "Control",
+    "fact": "4 partitions · one scheduler per partition",
+    "role": "A scheduler chooses an eligible resident warp and issues work. When one warp waits on a dependency, another ready warp may use the available execution resources.",
+    "ml": "This is how GPUs hide latency. High theoretical occupancy is not enough if few resident warps are eligible to issue.",
+    "deeper": "A warp contains 32 threads. It is a scheduling group, not a permanent assignment of 32 threads to 32 specific physical CUDA cores.",
+    "links": [
+      "dispatch",
+      "scoreboard",
+      "registers",
+      "warp"
+    ]
+  },
+  "scoreboard": {
+    "id": "scoreboard",
+    "level": "sm",
+    "name": "Dependency tracking",
+    "category": "Control",
+    "fact": "Conceptual scheduler bookkeeping",
+    "role": "Dependency tracking records whether inputs and prior operations are ready, helping prevent an instruction from consuming unavailable results.",
+    "ml": "Long waits on memory or dependent arithmetic can leave a scheduler with little eligible work. Examine stall reasons in a profiler.",
+    "deeper": "The scoreboard marker is a conceptual annotation beside the scheduler. Its physical circuit layout is not published here.",
+    "links": [
+      "scheduler",
+      "lsu"
+    ]
+  },
+  "dispatch": {
+    "id": "dispatch",
+    "level": "sm",
+    "name": "Dispatch units",
+    "category": "Control",
+    "fact": "Instruction → execution resource",
+    "role": "Dispatch logic directs issued work toward the corresponding arithmetic, matrix, memory or special-function units.",
+    "ml": "The instruction mix determines which execution resources are busy. An operation that looks simple in Python can launch several different kernels.",
+    "deeper": "Different instructions have different resource requirements and throughput. One universal “GPU utilization” number hides this detail.",
+    "links": [
+      "scheduler",
+      "alu",
+      "tensor",
+      "lsu"
+    ]
+  },
+  "registers": {
+    "id": "registers",
+    "level": "sm",
+    "name": "Register files",
+    "category": "Memory",
+    "fact": "256 KB per SM · thread-local working values",
+    "role": "Registers store operands, loop variables and partial results close to the execution units. Threads have their own logical register values.",
+    "ml": "Too many registers per thread can reduce resident work. Register spills use local-memory address space, backed by device memory.",
+    "deeper": "Registers are allocated from a finite SM resource. Their storage circuits retain bits while powered; unlike external DRAM cells, static storage does not need periodic refresh. The four illustrated banks represent the SM’s partitions.",
+    "links": [
+      "alu",
+      "tensor",
+      "shared",
+      "scheduler"
+    ]
+  },
+  "alu": {
+    "id": "alu",
+    "level": "sm",
+    "name": "CUDA arithmetic lanes",
+    "category": "Compute",
+    "fact": "128 FP32 / INT32 lanes per SM",
+    "role": "These lanes execute general arithmetic and integer operations used by CUDA threads. They handle much more than large matrix multiplication.",
+    "ml": "Elementwise activations, indexing and many optimizer operations use general execution paths. Precision alone does not guarantee Tensor Core use.",
+    "deeper": "Blackwell unifies FP32 and INT32 capability in these lanes; a lane does not execute both types simultaneously in the same cycle.",
+    "links": [
+      "registers",
+      "dispatch",
+      "tensor"
+    ]
+  },
+  "tensor": {
+    "id": "tensor",
+    "level": "sm",
+    "name": "Tensor Cores",
+    "category": "Compute",
+    "fact": "4 fifth-generation Tensor Cores per SM",
+    "role": "Specialized units perform matrix multiply-accumulate operations on small tiles: multiply input fragments and add to an accumulator.",
+    "ml": "Suitable cuBLAS, cuDNN and generated kernels can use them. Tensor shape, datatype, layout and the chosen kernel determine actual acceleration.",
+    "deeper": "FP16, BF16, TF32 and supported lower-precision formats have different paths. Advertised sparse low-precision TOPS are not dense FP32 training performance.",
+    "links": [
+      "registers",
+      "shared",
+      "alu",
+      "matrix"
+    ],
+    "dive": [
+      "flow",
+      "matrix",
+      "Follow a matrix tile →"
+    ]
+  },
+  "lsu": {
+    "id": "lsu",
+    "level": "sm",
+    "name": "Load / store units",
+    "category": "Data movement",
+    "fact": "Addresses and memory transactions",
+    "role": "These units execute memory instructions, moving values between execution resources and the memory hierarchy.",
+    "ml": "Neighboring threads requesting neighboring values can share efficient transactions. Scattered accesses may move more bytes than your useful data.",
+    "deeper": "Stores, loads and atomics have their own costs. Not every request travels to DRAM: cache hits can satisfy accesses earlier.",
+    "links": [
+      "shared",
+      "registers",
+      "l2"
+    ]
+  },
+  "shared": {
+    "id": "shared",
+    "level": "sm",
+    "name": "Shared memory / L1 cache",
+    "category": "Memory",
+    "fact": "128 KB combined resource per SM",
+    "role": "This on-chip storage serves a hardware-managed cache and a configurable programmer-managed scratchpad. They share capacity; they are not two independent 128 KB pools.",
+    "ml": "Tiled kernels reuse data in shared memory to avoid repeated global loads. Shared-memory allocation can limit how many blocks fit on an SM.",
+    "deeper": "CUDA shared memory is shared by threads in a block, not all threads on the GPU. Bank conflicts and synchronization affect its usefulness.",
+    "links": [
+      "registers",
+      "lsu",
+      "barrier",
+      "l2"
+    ]
+  },
+  "barrier": {
+    "id": "barrier",
+    "level": "sm",
+    "name": "Synchronization",
+    "category": "Control",
+    "fact": "Coordinate cooperating threads",
+    "role": "Synchronization ensures cooperating threads reach required points and see the necessary completed memory operations before proceeding.",
+    "ml": "A matrix tile must be ready before other threads consume it. Missing synchronization can make an apparently fast kernel incorrect.",
+    "deeper": "This is a functional marker, not a literal independent rectangular unit. Synchronization scope matters: a block barrier is not a whole-GPU barrier.",
+    "links": [
+      "shared",
+      "scheduler"
+    ]
+  },
+  "texture": {
+    "id": "texture",
+    "level": "sm",
+    "name": "Texture units",
+    "category": "Graphics / memory",
+    "fact": "4 texture units per SM",
+    "role": "Texture hardware fetches and filters sampled image data, including addressing modes used by graphics and supported compute APIs.",
+    "ml": "Useful for particular image-sampling workloads; ordinary tensor indexing does not automatically exploit texture filtering.",
+    "deeper": "Texture access shares aspects of the SM memory hierarchy. These units do not perform the convolution weights of a CNN simply because its input is an image.",
+    "links": [
+      "shared",
+      "raster",
+      "lsu"
+    ]
+  },
+  "sfu": {
+    "id": "sfu",
+    "level": "sm",
+    "name": "Special-function units",
+    "category": "Compute",
+    "fact": "Specialized mathematical operations",
+    "role": "Special-function hardware accelerates supported operations such as approximate reciprocal, reciprocal square root and transcendental-function components.",
+    "ml": "An activation or normalization kernel can have a different limiting resource from a matrix multiply. Inspect the generated operation mix.",
+    "deeper": "A high-level math call may need several instructions and accuracy corrections. Not every function maps one-to-one onto one SFU instruction.",
+    "links": [
+      "alu",
+      "dispatch"
+    ]
+  },
+  "rt": {
+    "id": "rt",
+    "level": "sm",
+    "name": "Ray-tracing core",
+    "category": "Graphics",
+    "fact": "1 fourth-generation RT Core per SM",
+    "role": "Dedicated ray-tracing hardware accelerates traversal and intersection work used to find where rays encounter scene geometry.",
+    "ml": "These cores are useful for rendering and specialized ray workloads. Standard PyTorch training does not use them as extra Tensor Cores.",
+    "deeper": "RT traversal cooperates with programmable shaders. This unit has a different purpose from both CUDA lanes and Tensor Cores.",
+    "links": [
+      "raster",
+      "alu"
+    ]
+  },
+  "partition": {
+    "id": "partition",
+    "level": "sm",
+    "name": "SM subpartitions",
+    "category": "Compute organization",
+    "fact": "4 execution partitions",
+    "role": "An SM divides resources among four subpartitions, each with scheduling, registers and execution units. Shared SM resources connect the partitions.",
+    "ml": "Work distribution, eligible warps and instruction mix determine how effectively the machine is used.",
+    "deeper": "The green 4 × 8 lane arrays show 32 arithmetic lanes per partition, giving 128 per SM. Blocks and warps are software units, not these boxes.",
+    "links": [
+      "scheduler",
+      "alu",
+      "registers"
+    ]
+  },
+  "fp64": {
+    "id": "fp64",
+    "level": "sm",
+    "name": "Double-precision units",
+    "category": "Compute",
+    "fact": "Limited FP64 resources · not a datacenter FP64 GPU",
+    "role": "Double-precision arithmetic represents floating-point values with 64 bits. GeForce includes limited hardware support for this work, rather than matching its much larger FP32 throughput.",
+    "ml": "For Monte Carlo pricing and numerical validation, choose precision deliberately. More digits can matter, but a GeForce FP64 workload may be much slower than its FP32 version.",
+    "deeper": "NVIDIA documents two FP64 cores per SM for this architecture; their physical position is not shown in its main SM diagram. The two markers here are symbolic.",
+    "links": [
+      "alu",
+      "registers"
+    ]
+  },
+  "host": {
+    "id": "host",
+    "level": "flow",
+    "name": "Host CPU & software",
+    "category": "Host",
+    "fact": "Your Ryzen 9800X3D",
+    "role": "Python, PyTorch, the CUDA runtime and the driver prepare work on the CPU. The CPU submits kernels and transfers to the GPU.",
+    "ml": "Data loading, Python overhead and synchronization can leave the GPU idle even when the GPU itself is fast.",
+    "deeper": "A Python expression is not one guaranteed GPU instruction. Libraries or compilers may select, combine or split kernels.",
+    "links": [
+      "ram",
+      "frontend",
+      "pcie"
+    ]
+  },
+  "ram": {
+    "id": "ram",
+    "level": "flow",
+    "name": "System DDR5 memory",
+    "category": "Host memory",
+    "fact": "Example host: 32 GB RAM · GPU: 12 GB VRAM",
+    "role": "Host RAM stores program state and data prepared by the CPU. Data needed by a device kernel usually must become accessible to the GPU.",
+    "ml": "Pinned host buffers can support asynchronous transfers. System RAM capacity does not directly increase the GPU’s local-memory bandwidth or capacity.",
+    "deeper": "Offloading may allow a larger workload but adds movement or slower access. Unified memory manages placement; it does not erase hardware distances.",
+    "links": [
+      "pcie",
+      "copy",
+      "vram"
+    ]
+  },
+  "grid": {
+    "id": "grid",
+    "level": "flow",
+    "name": "Kernel grid & thread blocks",
+    "category": "Execution model",
+    "fact": "A launch defines many blocks",
+    "role": "A kernel grid describes groups of threads. Ordinary blocks are assigned to SMs as resources become available; a block’s threads execute on one SM.",
+    "ml": "Choose enough work to fill the GPU. A tiny grid may leave many of your 48 SMs with nothing to do.",
+    "deeper": "One block is not one SM, and an SM may host multiple blocks. The four-block drawing represents work groups rather than a fixed allocation.",
+    "links": [
+      "sm",
+      "warp",
+      "scheduler"
+    ]
+  },
+  "warp": {
+    "id": "warp",
+    "level": "flow",
+    "name": "Warp of 32 threads",
+    "category": "Execution model",
+    "fact": "32 lanes · one instruction stream at issue",
+    "role": "Threads within a block are grouped into warps. An issued instruction operates on the active lanes; threads can have different data and branching paths.",
+    "ml": "Divergence can leave lanes masked during some instructions. Coalesced memory accesses depend on the addresses requested by the warp.",
+    "deeper": "Warp size is a programming-model grouping, not the number of simultaneous warps on an SM. Warps take turns using execution hardware.",
+    "links": [
+      "scheduler",
+      "alu",
+      "registers"
+    ]
+  },
+  "matrix": {
+    "id": "matrix",
+    "level": "flow",
+    "name": "Matrix multiply-accumulate",
+    "category": "Compute",
+    "fact": "A × B + accumulator",
+    "role": "A tiled kernel brings small portions of its inputs close to the compute units and repeatedly multiplies and accumulates partial results.",
+    "ml": "Reusing each loaded tile for many operations raises arithmetic intensity: more useful math for each byte fetched from device memory.",
+    "deeper": "The visual is a conceptual Tensor Core path. A general CUDA kernel may use arithmetic lanes instead, and instruction-specific data paths vary.",
+    "links": [
+      "tensor",
+      "shared",
+      "registers"
+    ]
+  },
+  "output": {
+    "id": "output",
+    "level": "flow",
+    "name": "Result & completion",
+    "category": "Data movement",
+    "fact": "Stores → device memory → optional host copy",
+    "role": "The kernel stores results. Following operations can consume them on the GPU; a copy back to the CPU is only needed when host code requires the data.",
+    "ml": "Calling .item(), copying to the CPU, or synchronizing may interrupt overlap. GPU timing needs correct synchronization or CUDA events.",
+    "deeper": "Not every layer requires a round trip to the CPU. The next kernel can operate on data already in device memory.",
+    "links": [
+      "vram",
+      "copy",
+      "host"
+    ]
+  }
+};
+
+const componentGroups = {
+  "card": [
+    "die",
+    "pcb",
+    "substrate",
+    "bga",
+    "vram",
+    "mosfet",
+    "choke",
+    "caps",
+    "vrm",
+    "shunt",
+    "power",
+    "pcie",
+    "ports",
+    "bios",
+    "tim",
+    "pads",
+    "coldplate",
+    "heatpipes",
+    "heatsink",
+    "fan",
+    "shroud",
+    "backplate"
+  ],
+  "chip": [
+    "sm",
+    "gpc",
+    "tpc",
+    "l2",
+    "fabric",
+    "controller",
+    "frontend",
+    "copy",
+    "mmu",
+    "amp",
+    "clock",
+    "raster",
+    "polymorph",
+    "rop",
+    "encode",
+    "decode",
+    "display"
+  ],
+  "sm": [
+    "scheduler",
+    "partition",
+    "instruction",
+    "scoreboard",
+    "dispatch",
+    "registers",
+    "alu",
+    "tensor",
+    "fp64",
+    "lsu",
+    "shared",
+    "barrier",
+    "texture",
+    "sfu",
+    "rt"
+  ],
+  "flow": [
+    "host",
+    "ram",
+    "pcie",
+    "vram",
+    "grid",
+    "warp",
+    "l2",
+    "shared",
+    "registers",
+    "matrix",
+    "output"
+  ]
+};
+
+const kernelJourney = [
+  [
+    "host",
+    "1 / 9 · Submit work",
+    "The CPU prepares a matrix operation. CUDA submits commands; this is a conceptual sequence, not a measured timeline."
+  ],
+  [
+    "ram",
+    "2 / 9 · Prepare host data",
+    "Inputs begin in system RAM. Reused model weights may already be resident on the GPU."
+  ],
+  [
+    "pcie",
+    "3 / 9 · Transfer inputs",
+    "An appropriate copy moves input data through PCIe into device memory. Some transfers can overlap independent work."
+  ],
+  [
+    "vram",
+    "4 / 9 · Device storage",
+    "Input matrices and output allocations live in GDDR7. Capacity and bandwidth are different constraints."
+  ],
+  [
+    "grid",
+    "5 / 9 · Schedule thread blocks",
+    "Blocks are assigned to available SM resources. Warps issue work when dependencies and execution resources permit."
+  ],
+  [
+    "l2",
+    "6 / 9 · Fetch a tile",
+    "A cache hit can satisfy the request on the die. A miss requires memory traffic; not all loads travel the entire path."
+  ],
+  [
+    "shared",
+    "7 / 9 · Reuse nearby data",
+    "Cooperating threads stage input tiles in shared memory and synchronize. Register fragments provide nearby operands and accumulators."
+  ],
+  [
+    "matrix",
+    "8 / 9 · Multiply & accumulate",
+    "A suitable kernel issues matrix operations. Reusing operands reduces the bytes fetched per useful arithmetic operation."
+  ],
+  [
+    "output",
+    "9 / 9 · Store and continue",
+    "Results are stored for the next device operation. Copy them to host memory only when needed."
+  ]
+];
+
+return { components, componentGroups, kernelJourney };
+})();
+// src/explorer.js
+__modules["src/explorer.js"] = (() => {
+const { buildFlow } = __modules["src/scene/flow.js"];
+const { buildSm } = __modules["src/scene/sm.js"];
+const { buildChip } = __modules["src/scene/chip.js"];
+const { buildCard } = __modules["src/scene/card.js"];
+const { createPrimitives } = __modules["src/scene/primitives.js"];
+const { components: C, componentGroups: groups, kernelJourney: journey } = __modules["src/data/components.js"];
+
+
+
+
+
+
+// Coordinate the educational UI and the Three.js scene.
+function createExplorer(root) {
+  'use strict';
+  const $ = id => root.querySelector('#' + id);
+  let level = 'card',
+  selected = 'backplate',
+  renderer,
+  scene,
+  camera,
+  world,
+  outline,
+  THREE,
+  raycaster,
+  objects = [],
+  parts = {},
+  motions = [],
+  labels = [],
+  ghost = false,
+  explode = 0,
+  journeyIndex = 0,
+  playing = false,
+  playTimer = null,
+  ready = false,
+  flowLines = [],
+  packet = null,
+  packetProgress = 0,
+  lastTime = 0;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let spherical = {
+    theta: - .42,
+    phi: .82,
+    radius: 24
+  },
+  target = {
+    x: 0,
+    y: 1,
+    z: 0
+  },
+  drag = null,
+  pointers = new Map(),
+  pinchDistance = 0;
+  let cardView = 'back';
+  let frameRequest = null;
+  const insideCard = new Set(['die', 'pcb', 'substrate', 'bga', 'vram', 'mosfet', 'choke', 'caps', 'vrm', 'shunt', 'bios']);
+  const coversBoard = new Set(['backplate', 'shroud', 'fan', 'heatsink', 'heatpipes', 'coldplate', 'tim', 'pads']);
+  // Camera poses are teaching views, not measurements. Local +Y is the fan
+  // side; local -Y is the backplate side, matching a normally installed card.
+  function applyCardView(view, amount, selectPart = true) {
+    if (level !== 'card') return;
+    const views = {
+      back: {
+        theta: 3.28,
+        phi: 2.32,
+        radius: 19.5,
+        y: .5,
+        explode: 0,
+        id: 'backplate'
+      },
+      fans: {
+        theta: - .18,
+        phi: .71,
+        radius: 19.2,
+        y: .6,
+        explode: 0,
+        id: 'fan'
+      },
+      edge: {
+        theta: 3.05,
+        phi: 1.29,
+        radius: 19,
+        y: .85,
+        explode: 0,
+        id: 'power'
+      },
+      ports: {
+        theta: - 1.42,
+        phi: 1.12,
+        radius: 16,
+        y: .8,
+        explode: 0,
+        id: 'ports'
+      },
+      board: {
+        theta: - .16,
+        phi: .42,
+        radius: 17.5,
+        y: .1,
+        explode: 0,
+        id: 'die'
+      },
+      layers: {
+        theta: - .3,
+        phi: .99,
+        radius: 23,
+        y: 1.7,
+        explode: .72,
+        id: 'die'
+      }
+    };
+    const pose = views[view] || views.back;
+    cardView = views[view] ? view: 'back';
+    spherical = {
+      theta: pose.theta,
+      phi: pose.phi,
+      radius: pose.radius
+    };
+    target = {
+      x: 0,
+      y: pose.y,
+      z: 0
+    };
+    explode = amount === undefined ? pose.explode: amount;
+    $('ga-view').value = cardView;
+    $('ga-explode').value = Math.round(explode * 100);
+    $('ga-explode-value').textContent = Math.round(explode * 100) + '%';
+    ghost = false;
+    $('ga-isolate').checked = false;
+    if (ready) applyExplode();
+    if (selectPart) showText(pose.id);
+    requestRender();
+  }
+  // Most of the model is stationary. Render only when something changes or
+  // while a finite journey packet is moving; more geometry need not mean a
+  // continuous GPU workload on the reader's machine.
+  function requestRender() {
+    if (ready && frameRequest === null) frameRequest = requestAnimationFrame(render);
+  }
+  const palette = {};
+  function getPalette() {
+    for (const k of['fg', 'muted', 'accent', 'board', 'metal', 'dark', 'memory', 'compute', 'control', 'power', 'heat', 'circuit', 'line', 'bg', 'panel', 'shell', 'rubber', 'silver', 'ink', 'pcbblack', 'gold', 'trace', 'ceramic', 'packagegreen', 'silicon', 'padgray', 'pastegray', 'chokegray', 'cavity', 'trim', 'etch']) {
+      const el = document.createElement('span');
+      el.style.color = 'var(--ga-' + k + ')';
+      root.appendChild(el);
+      palette[k] = getComputedStyle(el).color;
+      el.remove();
+    }
+  }
+  function categoryColor(c) {
+    return /Memory|memory/.test(c) ? 'memory': /Power/.test(c) ? 'power': /Cooling/.test(c) ? 'heat': /Compute/.test(c) ? 'compute': 'control';
+  }
+  function showText(id) {
+    const d = C[id];
+    selected = id;
+    $('ga-name').textContent = d.name;
+    $('ga-category').textContent = d.category;
+    $('ga-fact').textContent = d.fact;
+    $('ga-role').textContent = d.role;
+    $('ga-ml').textContent = d.ml;
+    $('ga-deeper').textContent = d.deeper;
+    $('ga-related').replaceChildren();
+    d.links.forEach(n => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ga-related';
+      b.textContent = C[n].name;
+      b.onclick =() => navigate(n);
+      $('ga-related').appendChild(b);
+    });
+    const dive = $('ga-dive');
+    dive.hidden = ! d.dive;
+    if (d.dive) {
+      dive.textContent = d.dive[2];
+      dive.onclick =() => changeLevel(d.dive[0], d.dive[1]);
+    }
+    if (groups[level].includes(id)) $('ga-component').value = id;
+    $('ga-pin').textContent = d.name;
+    if (ready) highlight();
+  }
+  function navigate(id) {
+    const d = C[id];
+    if (level === 'card' && groups.card.includes(id) && cardView !== 'layers') {
+      if (insideCard.has(id) && cardView !== 'board') applyCardView('board', 0, false);
+      else if (cardView === 'board' && coversBoard.has(id)) applyCardView('layers', .72, false);
+    }
+    if (! groups[level].includes(id)) changeLevel(d.level, id);
+    else {
+      showText(id);
+      if (level === 'flow') {
+        const ix = journey.findIndex(x => x[0] === id);
+        if (ix >= 0) setJourney(ix, false);
+      }
+    }
+  }
+  function fillSelect() {
+    $('ga-component').replaceChildren();
+    groups[level].forEach(id => {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = C[id].name;
+      $('ga-component').appendChild(o);
+    });
+    $('ga-part-count').textContent = groups[level].length + ' component types';
+  }
+  function changeLevel(next, id) {
+    stopPlay();
+    level = next;
+    ghost = false;
+    $('ga-isolate').checked = false;
+    root.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === level)));
+    $('ga-explode-wrap').hidden = level === 'flow';
+    $('ga-view-wrap').hidden = level !== 'card';
+    root.querySelector('.ga-legend').hidden = level === 'card';
+    $('ga-isolate-wrap').hidden = level === 'flow';
+    $('ga-flow-controls').hidden = level !== 'flow';
+    $('ga-timeline').hidden = level !== 'flow';
+    $('ga-stage-title').textContent = {
+      card: 'PNY · PHYSICAL ASSEMBLY',
+      chip: 'GB205 · FUNCTIONAL BLOCKS',
+      sm: 'ONE OF 48 STREAMING MULTIPROCESSORS',
+      flow: 'ONE POSSIBLE TILED MATMUL PATH'
+    }
+    [level];
+    $('ga-scale').textContent = level === 'card' ? 'Exterior reference · schematic internals': 'Functional schematic';
+    fillSelect();
+    if (ready) build();
+    home();
+    if (level === 'card' && id && insideCard.has(id)) applyCardView('board', 0, false);
+    showText(id ||(level === 'card' ? 'backplate': groups[level][0]));
+    if (level === 'flow') {
+      journeyIndex = Math.max(0, journey.findIndex(j => j[0] === selected));
+      setJourney(journeyIndex, false);
+    }
+  }
+  function setJourney(i, animate) {
+    journeyIndex = Math.max(0, Math.min(journey.length - 1, i));
+    const j = journey[journeyIndex];
+    showText(j[0]);
+    $('ga-category').textContent = j[1];
+    $('ga-role').textContent = j[2];
+    $('ga-prev').disabled = journeyIndex === 0;
+    $('ga-next').disabled = journeyIndex === journey.length - 1;
+    root.querySelectorAll('.ga-step').forEach((b, k) => b.setAttribute('aria-pressed', String(k === journeyIndex)));
+    if (packet) {
+      packetProgress = animate && ! reduced ? 0: 1;
+      packet.visible = animate && ! reduced && journeyIndex > 0;
+    }
+    if (ready) updateFlow();
+  }
+  function stopPlay() {
+    playing = false;
+    clearTimeout(playTimer);
+    $('ga-play').textContent = 'Play journey';
+  }
+  function play() {
+    if (playing) {
+      stopPlay();
+      return;
+    }
+    playing = true;
+    $('ga-play').textContent = 'Pause';
+    if (journeyIndex === journey.length - 1) setJourney(0, true);
+    function tick() {
+      if (! playing) return;
+      if (journeyIndex >= journey.length - 1) {
+        stopPlay();
+        return;
+      }
+      setJourney(journeyIndex + 1, true);
+      playTimer = setTimeout(tick, 2500);
+    }
+    playTimer = setTimeout(tick, 2000);
+  }
+  let group,
+  mat,
+  box,
+  cylinder,
+  line,
+  tube,
+  label,
+  layer,
+  tile;
+  function card() {
+    buildCard({
+      THREE,
+      palette,
+      objects,
+      world,
+      group,
+      mat,
+      box,
+      cylinder,
+      line,
+      tube,
+      label,
+      layer,
+      tile,
+      labels
+    });
+  }
+  function chip() {
+    buildChip({
+      THREE,
+      palette,
+      objects,
+      world,
+      group,
+      mat,
+      box,
+      cylinder,
+      line,
+      tube,
+      label,
+      layer,
+      tile
+    });
+  }
+  function sm() {
+    buildSm({
+      THREE,
+      palette,
+      objects,
+      world,
+      group,
+      mat,
+      box,
+      cylinder,
+      line,
+      tube,
+      label,
+      layer,
+      tile
+    });
+  }
+  function flow() {
+    packet = buildFlow({
+      THREE,
+      palette,
+      objects,
+      world,
+      group,
+      mat,
+      box,
+      cylinder,
+      line,
+      tube,
+      label,
+      layer,
+      tile,
+      flowLines
+    });
+  }
+  // Release GPU-side resources when replacing a scene; removing a group alone is not enough.
+  function dispose() {
+    if (world) {
+      world.traverse(o => {
+        if (o.isInstancedMesh && o.dispose) o.dispose();
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          const ms = Array.isArray(o.material) ? o.material: [o.material];
+          ms.forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
+        }
+      });
+      scene.remove(world);
+    }
+    if (outline) {
+      scene.remove(outline);
+      outline.geometry.dispose();
+      outline.material.dispose();
+      outline = null;
+    }
+    parts = {};
+    objects = [];
+    motions = [];
+    labels = [];
+    flowLines = [];
+    packet = null;
+  }
+  // Rebuild registries together with geometry so picking never targets a discarded scene.
+  function build() {
+    dispose();
+    world = new THREE.Group();
+    scene.add(world);
+    ({
+      group,
+      mat,
+      box,
+      cylinder,
+      line,
+      tube,
+      label,
+      layer,
+      tile
+    }
+    = createPrimitives({
+      THREE,
+      palette,
+      world,
+      parts,
+      objects,
+      motions,
+      labels
+    }));
+    ({
+      card,
+      chip,
+      sm,
+      flow
+    })[level]();
+    applyExplode();
+  }
+  function applyExplode() {
+    motions.forEach(({
+      g,
+      base,
+      delta
+    }) => g.position.copy(base).addScaledVector(delta, explode));
+    if (ready) highlight();
+  }
+  // Resolve a mesh to its nearest named ancestor: decorative submeshes belong to their parent component.
+  function highlight() {
+    world.traverse(o => {
+      if ((o.isMesh || o.isLine) && o.material && ! o.userData.keep) {
+        const ancestry =(() => {
+          let p = o;
+          while (p) {
+            if (p.userData.id) return p.userData.id;
+            p = p.parent;
+          }
+          return null;
+        })();
+        const same = ancestry === selected;
+        const hiddenCover = level === 'card' && cardView === 'board' && coversBoard.has(ancestry);
+        o.visible = ! hiddenCover &&(! ghost || same);
+        if (o.material.emissive) {
+          o.material.emissive.set(same ? palette.accent: 0x000000);
+          o.material.emissiveIntensity = same ?(level === 'card' ? .065: .16): 0;
+        }
+      }
+    });
+    if (outline) {
+      scene.remove(outline);
+      outline.geometry.dispose();
+      outline.material.dispose();
+      outline = null;
+    }
+    const gs = parts[selected];
+    if (gs && gs.length) {
+      const bbox = new THREE.Box3();
+      gs.forEach(g => bbox.expandByObject(g));
+      if (! bbox.isEmpty()) {
+        bbox.expandByScalar(.085);
+        outline = new THREE.Box3Helper(bbox, new THREE.Color(palette.accent));
+        outline.material.transparent = true;
+        outline.material.opacity = .75;
+        scene.add(outline);
+      }
+    }
+    $('ga-pin').hidden = ! gs || ! gs.length;
+    if (level === 'flow') updateFlow();
+    requestRender();
+  }
+  function home() {
+    if (level === 'card') {
+      applyCardView('back');
+      resize();
+      return;
+    }
+    spherical = {
+      theta: 0,
+      phi: .59,
+      radius: level === 'chip' ? 25: level === 'sm' ? 22: 26
+    };
+    target = {
+      x: 0,
+      y: .5,
+      z: 0
+    };
+    resize();
+  }
+  function updateFlow() {
+    flowLines.forEach((l, i) => {
+      const active = i === journeyIndex - 1;
+      l.mesh.material.color.set(active ? palette.accent: palette.metal);
+      l.arrow.material.color.set(active ? palette.accent: palette.metal);
+    });
+  }
+  function resize() {
+    if (! renderer) return;
+    const rect = $('ga-stage').getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    renderer.setSize(rect.width, rect.height, false);
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+    requestRender();
+  }
+  // Project the selected label and draw one frame. Only finite packet motion requests another frame.
+  function render(t) {
+    frameRequest = null;
+    if (! root.isConnected) {
+      dispose();
+      renderer.dispose();
+      return;
+    }
+    if (document.hidden) return;
+    const dt = Math.min((t - lastTime) / 1000, .05);
+    lastTime = t;
+    const width = $('ga-stage').clientWidth,
+    height = $('ga-stage').clientHeight;
+    if (width < 1 || height < 1) return;
+    const aspect = width / height;
+    const r = spherical.radius * Math.max(1, .95 / aspect);
+    camera.up.set(0, level === 'card' &&['back', 'edge', 'ports'].includes(cardView) ? - 1: 1, 0);
+    camera.position.set(target.x + r * Math.sin(spherical.phi) * Math.sin(spherical.theta), target.y + r * Math.cos(spherical.phi), target.z + r * Math.sin(spherical.phi) * Math.cos(spherical.theta));
+    camera.lookAt(target.x, target.y, target.z);
+    if (packet && packet.visible) {
+      const route = flowLines[Math.max(0, journeyIndex - 1)];
+      if (route) {
+        packetProgress = Math.min(1, packetProgress + dt * .8);
+        packet.position.lerpVectors(route.start, route.end, packetProgress);
+        if (packetProgress >= 1) packet.visible = false;
+      }
+    }
+    if (packet && packet.visible) requestRender();
+    renderer.render(scene, camera);
+    const gs = parts[selected];
+    if (gs && gs.length) {
+      const bb = new THREE.Box3().setFromObject(gs[0]);
+      const p = bb.getCenter(new THREE.Vector3());
+      p.y = bb.max.y + .13;
+      p.project(camera);
+      let x =(p.x * .5 + .5) * width,
+      y =(- p.y * .5 + .5) * height;
+      const pin = $('ga-pin');
+      pin.style.left = Math.max(90, Math.min(width - 90, x)) + 'px';
+      pin.style.top = Math.max(66, Math.min(height - 43, y)) + 'px';
+    }
+  }
+  function hit(e) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), camera);
+    return raycaster.intersectObjects(objects, false).find(h => h.object.visible);
+  }
+  // Translate pointer gestures into camera state; selection still has a native dropdown alternative.
+  function setupInteraction() {
+    const canvas = renderer.domElement;
+    canvas.addEventListener('pointerdown', e => {
+      pointers.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY
+      });
+      canvas.setPointerCapture(e.pointerId);
+      if (pointers.size === 1) drag = {
+        x: e.clientX,
+        y: e.clientY,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false
+      };
+      if (pointers.size === 2) {
+        const a = [...pointers.values()];
+        pinchDistance = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+        if (drag) drag.moved = true;
+      }
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (pointers.has(e.pointerId)) {
+        const previous = pointers.get(e.pointerId);
+        pointers.set(e.pointerId, {
+          x: e.clientX,
+          y: e.clientY
+        });
+        if (pointers.size === 2) {
+          const a = [...pointers.values()],
+          dist = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+          if (pinchDistance > 0) spherical.radius = Math.max(8, Math.min(48, spherical.radius * pinchDistance / dist));
+          pinchDistance = dist;
+          requestRender();
+        }
+        else if (drag) {
+          const dx = e.clientX - previous.x,
+          dy = e.clientY - previous.y;
+          spherical.theta -= dx * .007;
+          spherical.phi = Math.max(.18, Math.min(2.55, spherical.phi + dy * .007));
+          requestRender();
+          if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 5) drag.moved = true;
+        }
+      }
+      else {
+        canvas.style.cursor = hit(e) ? 'pointer': 'grab';
+      }
+    });
+    canvas.addEventListener('pointerup', e => {
+      if (drag && ! drag.moved && pointers.size === 1) {
+        const h = hit(e);
+        if (h) navigate(h.object.userData.id);
+      }
+      pointers.delete(e.pointerId);
+      if (! pointers.size) drag = null;
+    });
+    canvas.addEventListener('pointercancel', e => {
+      pointers.delete(e.pointerId);
+      drag = null;
+    });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      spherical.radius = Math.max(8, Math.min(48, spherical.radius * Math.exp(e.deltaY * .001)));
+      requestRender();
+    }, {
+      passive: false
+    });
+  }
+  // Initialize graphics after the engine loads. Component text and quiz state do not depend on success.
+  function init() {
+    THREE = window.THREE;
+    getPalette();
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(40, 1, .1, 150);
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: 'low-power'
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
+    renderer.domElement.setAttribute('role', 'img');
+    renderer.domElement.setAttribute('aria-label', 'Rotatable 3D GPU. Use the component menu for keyboard-accessible inspection.');
+    $('ga-stage').prepend(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa6b5, 2.3));
+    const light = new THREE.DirectionalLight(0xffffff, 3.2);
+    light.position.set(- 6, 14, 7);
+    scene.add(light);
+    const fill = new THREE.DirectionalLight(0xc2d9ff, 1.3);
+    fill.position.set(5, - 9, 7);
+    scene.add(fill);
+    raycaster = new THREE.Raycaster();
+    ready = true;
+    build();
+    home();
+    showText(selected);
+    setupInteraction();
+    new ResizeObserver(resize).observe($('ga-stage'));
+    $('ga-loading').hidden = true;
+    root.dataset.ready = 'true';
+    requestRender();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopPlay();
+      else requestRender();
+    });
+    const themeObserver = new MutationObserver(() => {
+      getPalette();
+      build();
+      showText(selected);
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-theme']
+    });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      getPalette();
+      build();
+      showText(selected);
+    });
+  }
+  root.querySelectorAll('[data-level]').forEach(b => b.onclick =() => changeLevel(b.dataset.level));
+  $('ga-component').onchange = e => navigate(e.target.value);
+  $('ga-view').onchange = e => applyCardView(e.target.value);
+  $('ga-explode').oninput = e => {
+    if (level === 'card' && cardView !== 'layers') applyCardView('layers', Number(e.target.value) / 100, false);
+    explode = Number(e.target.value) / 100;
+    $('ga-explode-value').textContent = e.target.value + '%';
+    if (ready) applyExplode();
+  };
+  $('ga-isolate').onchange = e => {
+    ghost = e.target.checked;
+    if (ready) highlight();
+  };
+  $('ga-home').onclick = home;
+  $('ga-prev').onclick =() => {
+    stopPlay();
+    setJourney(journeyIndex - 1, true);
+  };
+  $('ga-next').onclick =() => {
+    stopPlay();
+    setJourney(journeyIndex + 1, true);
+  };
+  $('ga-play').onclick = play;
+  journey.forEach((j, i) => {
+    const b = document.createElement('button');
+    b.className = 'ga-step';
+    b.type = 'button';
+    b.textContent = i + 1;
+    b.setAttribute('aria-label', 'Journey step ' +(i + 1) + ': ' + C[j[0]].name);
+    b.setAttribute('aria-pressed', String(i === 0));
+    b.onclick =() => {
+      stopPlay();
+      setJourney(i, true);
+    };
+    $('ga-timeline').appendChild(b);
+  });
+  fillSelect();
+  showText(selected);
+  if (window.THREE) {
+    try {
+      init();
+    }
+    catch (e) {
+      $('ga-loading').textContent = '3D rendering is unavailable in this browser. All component explanations remain available in the menu.';
+      root.dataset.error = e.message;
+    }
+  }
+  else {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+    script.onload =() => {
+      try {
+        init();
+      }
+      catch (e) {
+        $('ga-loading').textContent = '3D rendering is unavailable in this browser. All component explanations remain available in the menu.';
+        root.dataset.error = e.message;
+      }
+    };
+    script.onerror =() => {
+      $('ga-loading').textContent = 'The 3D engine could not load. Component explanations are available in the menu.';
+      root.dataset.error = 'engine-load';
+    };
+    document.head.appendChild(script);
+  }
+  return {
+    inspect: navigate,
+    pause: stopPlay,
+    refresh: resize
+  };
+}
+
+return { createExplorer };
+})();
+// src/data/sources.js
+__modules["src/data/sources.js"] = (() => {
+
+/** Primary sources used by the curriculum. Review dates are not version pins. */
+const sources = {
+  pny: {
+    title: 'PNY RTX 5070 triple-fan specifications',
+    url: 'https://www.pny.com/File%20Library/Company/Support/Product%20Brochures/GeForce%20Graphics/English/RTX-5070-12GB-Triple-Fan-Brochure.pdf',
+  },
+  blackwell: {
+    title: 'NVIDIA RTX Blackwell architecture — SM diagram and Appendix C',
+    url: 'https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf',
+  },
+  'programming-model': {
+    title: 'CUDA programming model',
+    url: 'https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html',
+  },
+  'advanced-kernels': {
+    title: 'CUDA advanced kernel programming',
+    url: 'https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/advanced-kernel-programming.html',
+  },
+  'async-execution': {
+    title: 'CUDA asynchronous execution',
+    url: 'https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html',
+  },
+  'best-practices': {
+    title: 'CUDA best practices — memory and performance',
+    url: 'https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/',
+  },
+  'mixed-precision': {
+    title: 'NVIDIA mixed-precision training guide',
+    url: 'https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html',
+  },
+  gradcache: {
+    title: 'Gao et al. (2021): Scaling Deep Contrastive Learning Batch Size under Memory Limited Setup',
+    url: 'https://arxiv.org/abs/2101.06983',
+  },
+};
+
+return { sources };
+})();
+// src/data/quizzes.js
+__modules["src/data/quizzes.js"] = (() => {
+
+/**
+ * Quiz content is independent of the UI and grading engine.
+ * Each choice is [label, feedback]. `correct` is its ORIGINAL zero-based index;
+ * the engine shuffles choices using stable IDs, never their screen position.
+ * Every question links to a component in components.js for follow-up study.
+ */
+function question(id, prompt, component, correct, hint, choices) {
+  return {
+    id, prompt, component, hint,
+    correctId: `${id}-${correct}`,
+    options: choices.map(([label, feedback], index) => ({
+      id: `${id}-${index}`, label, feedback,
+    })),
+  };
+}
+
+const subjects = [
+  {
+    id: 'hardware', title: 'The card behind your model', level: 'card',
+    summary: 'Connect memory capacity, cooling, and compute hardware to training.',
+    sources: ['pny', 'blackwell'],
+    questions: [
+      question('hw-memory', 'A training allocation exceeds the RTX 5070’s available VRAM. Why does having 32 GB of system DDR5 not automatically solve it?', 'vram', 1,
+        'Think about which processor owns each memory pool.', [
+          ['The CPU reserves all DDR5 for its caches.', 'System DDR5 holds general host data; it is not the CPU’s cache.'],
+          ['DDR5 and the GPU’s local GDDR7 are separate pools.', 'Host RAM does not automatically expand local VRAM. Offloading or managed placement changes data movement and performance.'],
+          ['GDDR7 accepts images but cannot hold model weights.', 'Device memory stores weights, activations, gradients, and other data.'],
+          ['The display connector limits allocation size.', 'Display outputs do not determine the capacity of device allocations.'],
+        ]),
+      question('hw-heat', 'A long, otherwise unchanged benchmark slows down as the card warms up. Which measurement best tests a thermal explanation?', 'heatsink', 2,
+        'A useful test observes the suspected cause and its effect together.', [
+          ['The number of display connectors.', 'Connector count does not show whether temperature is constraining clock speed.'],
+          ['The saved checkpoint’s filename.', 'A filename supplies no evidence about the card’s operating conditions.'],
+          ['Temperature, clock speed, and step time over the run.', 'Correlated thermal, clock, and timing measurements can support or weaken the hypothesis; they do not prove it in isolation.'],
+          ['The CPU’s advertised boost clock alone.', 'A CPU specification does not measure the GPU’s behavior during this run.'],
+        ]),
+      question('hw-power', 'PNY lists 250 W for this RTX 5070. What is the sound interpretation when profiling an ML workload?', 'power', 0,
+        'A product power specification and a live measurement answer different questions.', [
+          ['It is a board power specification; actual draw varies.', 'Workload, operating conditions, and limits affect measured power. The specification is not a constant reading.'],
+          ['Every kernel consumes exactly 250 joules.', 'Watts measure power. Energy also depends on how long the workload runs.'],
+          ['It guarantees the same step time for every model.', 'Power alone does not determine workload throughput.'],
+          ['It describes the entire computer’s power draw.', 'The CPU, memory, fans, and other system components also consume power.'],
+        ]),
+      question('hw-engines', 'Which component normally executes the compute work in a CUDA training kernel?', 'sm', 3,
+        'Distinguish general compute execution from fixed-function media processing.', [
+          ['NVENC’s video-encoding pipeline.', 'NVENC accelerates supported video encoding, not arbitrary CUDA training instructions.'],
+          ['The display-output connector.', 'A display connector carries output signals rather than executing kernels.'],
+          ['The voltage controller’s feedback loop.', 'The voltage controller regulates the electrical supply.'],
+          ['The GPU’s streaming multiprocessors.', 'SMs execute scheduled warps using their arithmetic, memory, and other execution resources.'],
+        ]),
+    ],
+  },
+  {
+    id: 'memory', title: 'Getting data to the math', level: 'sm',
+    summary: 'Reason about bandwidth, reuse, coalescing, and the memory hierarchy.',
+    sources: ['blackwell', 'best-practices'],
+    questions: [
+      question('mem-bandwidth', 'At 28 Gbit/s per pin on a 192-bit memory bus, what is the theoretical bandwidth in decimal GB/s?', 'controller', 2,
+        'Multiply the rate by bus width, then convert bits to bytes.', [
+          ['192 GB/s', 'Bus width alone is not a transfer rate.'],
+          ['5,376 GB/s', '28 × 192 = 5,376 Gbit/s; that result is still in bits.'],
+          ['672 GB/s', '28 × 192 ÷ 8 = 672 GB/s. Real kernels can achieve less than this peak.'],
+          ['84 GB/s', 'Dividing 672 by eight again would convert bits to bytes twice.'],
+        ]),
+      question('mem-reuse', 'A matrix kernel reuses a loaded tile many times from shared memory. What can this improve?', 'shared', 0,
+        'Compare useful arithmetic with bytes fetched from device memory.', [
+          ['Arithmetic performed per byte fetched from VRAM.', 'Reusing a tile can increase arithmetic intensity and reduce repeated device-memory traffic.'],
+          ['The physical number of memory packages.', 'A kernel cannot add GDDR7 packages to the card.'],
+          ['The capacity of the PCIe connector.', 'On-SM reuse does not change the host-device link’s physical properties.'],
+          ['The number of Tensor Cores fabricated on the die.', 'Instruction selection and reuse do not change the hardware unit count.'],
+        ]),
+      question('mem-pool', 'The SM diagram shows a unified L1/shared-memory resource. What should a learner avoid concluding?', 'shared', 1,
+        'The word unified matters when interpreting a block diagram.', [
+          ['Shared memory is local to an SM’s execution resources.', 'Shared memory serves cooperating threads executing on an SM.'],
+          ['L1 and shared memory each have an independent 128 KB pool.', 'The diagram describes a combined resource. Allocation limits and partitioning also constrain usable shared memory.'],
+          ['Shared memory can help threads reuse staged data.', 'Explicit staging and reuse are important uses of shared memory.'],
+          ['A kernel’s shared-memory demand can affect residency.', 'Resident blocks must fit within the SM’s available resources.'],
+        ]),
+      question('mem-coalescing', 'For an aligned contiguous array, which warp access pattern generally needs fewer global-memory transactions?', 'lsu', 3,
+        'Look at the addresses requested by neighboring lanes.', [
+          ['Every lane reads from a distant random address.', 'Scattered addresses can require many separate memory transactions.'],
+          ['Only changing the names of the pointer variables.', 'Variable names do not alter the requested memory addresses.'],
+          ['Each lane adds a large stride to its address.', 'Large strides can spread the requests over many memory segments.'],
+          ['Neighboring lanes read neighboring elements.', 'Contiguous, suitably aligned requests can be serviced by coalesced transactions.'],
+        ]),
+    ],
+  },
+  {
+    id: 'execution', title: 'Warps, blocks, and SMs', level: 'sm',
+    summary: 'Understand how software work is scheduled onto execution resources.',
+    sources: ['programming-model', 'advanced-kernels'],
+    questions: [
+      question('exec-warp', 'What does a 32-thread warp represent?', 'warp', 1,
+        'Separate a scheduling group from permanently assigned physical hardware.', [
+          ['A permanent assignment to 32 dedicated CUDA cores.', 'Warps share execution resources over time; they do not permanently own a set of cores.'],
+          ['A group whose active lanes execute issued instructions.', 'A warp groups 32 threads. An instruction operates on its active lanes using available execution hardware.'],
+          ['A group that always occupies exactly 32 SMs.', 'An ordinary block’s warps execute on one SM, not one SM per thread.'],
+          ['A replacement for all thread blocks in a grid.', 'Warps are formed from threads within blocks; they do not replace the grid/block hierarchy.'],
+        ]),
+      question('exec-small-grid', 'A kernel launches eight ordinary thread blocks on a 48-SM GPU. What is the maximum number of SMs those blocks can occupy at one time?', 'grid', 0,
+        'An ordinary thread block executes on one SM.', [
+          ['8 SMs', 'Eight blocks can occupy at most eight SMs simultaneously. Multiple blocks could also share an SM.'],
+          ['48 SMs', 'Eight ordinary blocks cannot simultaneously spread over all 48 SMs.'],
+          ['256 SMs', 'Multiplying by the warp size does not turn threads into separate SM assignments.'],
+          ['Exactly 1 SM in every case', 'Multiple blocks can execute on different SMs when scheduling and resources allow it.'],
+        ]),
+      question('exec-latency', 'One resident warp is waiting for a memory dependency. How can an SM continue making progress?', 'scheduler', 2,
+        'The waiting warp need not be the only resident work.', [
+          ['Ignore the dependency and use the missing value.', 'Using an unavailable operand would not preserve the program’s required computation.'],
+          ['Move the same block across every SM immediately.', 'Ordinary block scheduling is not a mechanism for migrating individual waiting instructions across all SMs.'],
+          ['Issue a ready instruction from another eligible warp.', 'Independent resident work can hide some latency when dependencies and execution resources permit.'],
+          ['Increase the physical size of L2 during the stall.', 'The scheduler cannot resize the chip’s cache hardware.'],
+        ]),
+      question('exec-registers', 'A kernel’s register use per thread rises substantially. Which consequence is plausible?', 'registers', 3,
+        'Each SM has a finite register file shared by resident work.', [
+          ['VRAM automatically becomes the same speed as registers.', 'Register allocation does not remove the latency and bandwidth differences between memory levels.'],
+          ['More threads must always become resident.', 'Higher per-thread demand can reduce how many threads fit.'],
+          ['The number of SMs increases to compensate.', 'Resource allocation cannot add physical SMs.'],
+          ['Fewer warps may fit, or values may spill to memory.', 'Register pressure can constrain residency; compiler decisions can also introduce spill traffic.'],
+        ]),
+    ],
+  },
+  {
+    id: 'precision', title: 'Tensor Cores and precision', level: 'sm',
+    summary: 'Connect instruction choice and numerical behavior to ML performance.',
+    sources: ['blackwell', 'mixed-precision'],
+    questions: [
+      question('prec-tensor', 'When can an ML operation use Tensor Cores?', 'tensor', 0,
+        'A dtype alone does not determine which machine instruction is issued.', [
+          ['When its kernel issues suitable supported matrix instructions.', 'The operation, implementation, data format, and instruction path must support Tensor Core execution.'],
+          ['Whenever any tensor is moved to the GPU.', 'Device placement does not make every operation a matrix instruction.'],
+          ['For every operation as soon as FP16 is selected.', 'Many FP16 operations use other execution units.'],
+          ['Only while a monitor is connected to DisplayPort.', 'Tensor Core computation does not require a display connection.'],
+        ]),
+      question('prec-validation', 'A lower-precision training run is faster. What evidence is still needed before calling it a successful optimization?', 'tensor', 2,
+        'Speed is useful only if the resulting model still meets the task’s requirements.', [
+          ['Only a screenshot of high GPU utilization.', 'Utilization alone says nothing about the model’s numerical or task quality.'],
+          ['Only the size of the power supply.', 'Power-supply capacity does not validate model behavior.'],
+          ['Numerical stability and task-quality comparisons under a fixed evaluation.', 'A speedup should be evaluated together with stable training and relevant quality metrics.'],
+          ['An identical filename for both checkpoints.', 'Matching names do not establish equivalent quality.'],
+        ]),
+      question('prec-memory', 'Why might mixed precision reduce training memory by much less than 50%?', 'vram', 1,
+        'Consider optimizer state and other allocations as well as activations.', [
+          ['All CUDA allocations must remain FP64.', 'CUDA supports many storage and computation types.'],
+          ['Some weights, optimizer states, and other buffers can remain FP32.', 'Mixed precision does not halve every allocation; the saving depends on the training implementation.'],
+          ['The card permanently converts half its VRAM into L2.', 'Changing a training dtype does not change the chip’s physical cache capacity.'],
+          ['FP16 always uses more bytes per element than FP32.', 'FP16 storage uses two bytes per element; FP32 uses four.'],
+        ]),
+      question('prec-fp64', 'A double-precision Monte Carlo kernel is much slower than an FP32 version on this GeForce card. What is a reasonable first hypothesis?', 'fp64', 3,
+        'Different arithmetic types need not have equal hardware throughput.', [
+          ['The fans execute FP64 arithmetic too slowly.', 'Fans move air and do not execute floating-point instructions.'],
+          ['Double precision always requires a CPU round trip per operation.', 'A GPU can execute FP64 instructions without such a mandatory round trip.'],
+          ['Installing more system RAM adds FP64 execution units.', 'Host RAM capacity does not alter the GPU’s arithmetic hardware.'],
+          ['FP64 hardware throughput is limited relative to FP32.', 'Consumer GeForce hardware allocates far less throughput to FP64. Profiling is needed to identify the actual bottleneck.'],
+        ]),
+    ],
+  },
+  {
+    id: 'movement', title: 'Moving data and measuring time', level: 'flow',
+    summary: 'Reason about host transfers, synchronization, and asynchronous work.',
+    sources: ['async-execution', 'best-practices'],
+    questions: [
+      question('move-resident', 'Model weights are unchanged across many inference calls. Which strategy can reduce unnecessary PCIe traffic?', 'pcie', 2,
+        'Ask whether the same bytes need to cross the link again.', [
+          ['Copy weights to the CPU after every layer.', 'Repeated round trips add traffic when the next operation can use device-resident weights.'],
+          ['Use the display cable to transfer the weights.', 'A display link is not the CUDA host-to-device transfer path.'],
+          ['Keep reusable weights in device memory when capacity permits.', 'Resident data can be reused by later kernels without uploading the same bytes again.'],
+          ['Reallocate and upload every weight for every call.', 'Repeated allocation and upload introduce work that reuse can avoid.'],
+        ]),
+      question('move-overlap', 'Which setup can enable a host-to-device copy to overlap independent GPU computation?', 'copy', 0,
+        'Both the data source and the scheduling/dependency conditions matter.', [
+          ['Pinned host buffers, asynchronous copies, and appropriate independent streams.', 'Overlap is possible when dependencies, stream usage, and hardware resources allow it; these conditions do not guarantee a speedup.'],
+          ['A blocking copy followed by a device-wide wait each iteration.', 'Explicit waits constrain overlap rather than creating it.'],
+          ['A larger checkpoint filename and the same synchronous code.', 'Filenames do not change copy scheduling.'],
+          ['Using more monitor outputs while keeping the same copy path.', 'Display-output count does not make host copies asynchronous.'],
+        ]),
+      question('move-timing', 'A CPU timer around an asynchronous kernel launch reports an extremely short duration. What may it have measured?', 'output', 1,
+        'Submitting work and completing it are different events.', [
+          ['A guaranteed end-to-end completion time.', 'A launch can return before GPU execution completes.'],
+          ['Mostly the time taken to enqueue the work.', 'Use appropriately placed CUDA events or synchronization to measure the intended completed GPU work.'],
+          ['The exact energy used by the kernel.', 'Elapsed time alone is not an energy measurement.'],
+          ['The capacity of the GPU’s register file.', 'A CPU timer does not measure register capacity.'],
+        ]),
+      question('move-host', 'A trace shows idle GPU gaps while the CPU decodes and prepares each batch. Which change should you investigate first?', 'host', 3,
+        'Optimize the stage that the trace shows delaying the next GPU task.', [
+          ['Changing the backplate logo.', 'The logo does not prepare batches or schedule work.'],
+          ['Rewriting only a GPU kernel that is absent during the gaps.', 'That kernel cannot remove time spent waiting for the host to supply work.'],
+          ['Reducing numerical precision without checking the host pipeline.', 'A faster GPU operation may leave the CPU preparation bottleneck unchanged.'],
+          ['Improving batch preparation and overlap in the input pipeline.', 'Addressing host preparation can reduce GPU starvation; measure the full pipeline to verify the result.'],
+        ]),
+    ],
+  },
+  {
+    id: 'performance', title: 'Diagnosing ML bottlenecks', level: 'flow',
+    summary: 'Apply the hardware model to performance predictions and fair comparisons.',
+    sources: ['best-practices', 'blackwell', 'gradcache'],
+    questions: [
+      question('perf-roofline', 'At 20 floating-point operations per byte fetched from VRAM, what optimistic bandwidth ceiling follows from 672 GB/s? Use decimal TFLOP/s and ignore other limits.', 'matrix', 0,
+        'Multiply operations per byte by bytes per second.', [
+          ['13.44 TFLOP/s', '20 × 672 = 13,440 GFLOP/s = 13.44 TFLOP/s. Compute and other limits may impose a lower ceiling.'],
+          ['134.4 TFLOP/s', 'This is ten times the product after converting giga to tera.'],
+          ['33.6 TFLOP/s', 'Dividing bandwidth by intensity does not give the requested operation rate.'],
+          ['672 TFLOP/s', 'Bandwidth in GB/s cannot be relabeled as an arithmetic rate without using intensity.'],
+        ]),
+      question('perf-small', 'Why can a tiny GPU matrix operation underperform the card’s advertised peak throughput?', 'frontend', 2,
+        'Consider how much useful work is available compared with launch and scheduling costs.', [
+          ['Peak throughput guarantees every matrix shape runs equally well.', 'Peak rates are ceilings for suitable workloads, not per-operation guarantees.'],
+          ['Small matrices disable all GPU memory.', 'Memory remains available; the issue can be insufficient work and overhead.'],
+          ['Launch overhead and insufficient parallel work can dominate.', 'A small operation may neither amortize overhead nor keep enough execution resources busy.'],
+          ['The backplate must warm up before any arithmetic can execute.', 'GPU arithmetic does not require the backplate to reach a warm temperature.'],
+        ]),
+      question('perf-contrastive', 'InfoNCE negatives come only from each 16-example microbatch. Does accumulating eight microbatches alone give each example 127 negatives?', 'vram', 1,
+        'Gradient accumulation combines gradients, not automatically the examples inside each loss.', [
+          ['Yes, because the effective optimizer batch is 128.', 'The optimizer batch size does not automatically expand the loss’s negative set.'],
+          ['No; each loss still sees 15 other examples without an additional mechanism.', 'A larger contrastive negative set needs a method such as a larger in-memory loss batch or an appropriate gradient-caching approach.'],
+          ['Yes, because the scheduler merges the losses into one warp.', 'Warp scheduling does not redefine the loss or merge its examples.'],
+          ['No; accumulation forces every loss to have zero negatives.', 'The other 15 examples in each microbatch are still available to that loss.'],
+        ]),
+      question('perf-compare', 'Which comparison best supports a claim that a training optimization helped?', 'clock', 3,
+        'Control the workload and evaluate more than one aspect of the result.', [
+          ['Compare different datasets and report only the fastest step.', 'Changing the workload and selecting an extreme timing can obscure the effect of the optimization.'],
+          ['Report only the GPU’s advertised arithmetic peak.', 'A hardware peak is not evidence of measured application improvement.'],
+          ['Time one cold run and ignore output quality.', 'Initialization effects and quality regressions can invalidate the practical conclusion.'],
+          ['Use a fixed workload, warm-up, valid timing, memory measurements, and quality checks.', 'A controlled comparison can establish whether speed or memory improvements preserve the task’s required behavior.'],
+        ]),
+    ],
+  },
+];
+
+return { subjects };
+})();
+// src/quiz/session.js
+__modules["src/quiz/session.js"] = (() => {
+
+/** Fisher–Yates: work on a copy so a retake cannot alter the source bank. */
+function shuffled(items, random = Math.random) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * The grading state machine has no DOM, renderer, storage, or timers.
+ * An answer is committed once, then the learner explicitly advances.
+ * Score uses stable answer IDs, never the shuffled A/B/C/D position.
+ */
+class QuizSession {
+  constructor(subject, random = Math.random) {
+    if (!subject?.questions?.length) throw new Error('A subject needs questions.');
+    this.subject = subject;
+    this.questions = shuffled(subject.questions, random).map(question => ({
+      ...question,
+      options: shuffled(question.options, random),
+    }));
+    this.index = 0;
+    this.selectedId = null;
+    this.responses = [];
+    this.complete = false;
+  }
+
+  get current() { return this.questions[this.index]; }
+  get total() { return this.questions.length; }
+  get answered() { return this.responses.length > this.index; }
+  get score() { return this.responses.filter(response => response.correct).length; }
+  get missed() { return this.responses.filter(response => !response.correct); }
+
+  select(optionId) {
+    if (this.complete || this.answered) return false;
+    if (!this.current.options.some(option => option.id === optionId)) return false;
+    this.selectedId = optionId;
+    return true;
+  }
+
+  submit() {
+    if (this.complete || this.answered || this.selectedId === null) return null;
+    const response = {
+      question: this.current,
+      selectedId: this.selectedId,
+      correct: this.selectedId === this.current.correctId,
+    };
+    this.responses.push(response);
+    return response;
+  }
+
+  advance() {
+    if (this.complete || !this.answered) return false;
+    if (this.index === this.total - 1) {
+      this.complete = true;
+    } else {
+      this.index++;
+      this.selectedId = null;
+    }
+    return true;
+  }
+}
+
+return { shuffled, QuizSession };
+})();
+// src/quiz/view.js
+__modules["src/quiz/view.js"] = (() => {
+const { sources } = __modules["src/data/sources.js"];
+const { subjects } = __modules["src/data/quizzes.js"];
+const { QuizSession } = __modules["src/quiz/session.js"];
+
+
+
+
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+
+function button(text, action, primary = false) {
+  const element = node('button', text, primary ? 'ga-button ga-primary' : 'ga-button');
+  element.type = 'button';
+  element.addEventListener('click', action);
+  return element;
+}
+
+/**
+ * Keep one attempt per subject during this page visit. Switching back to the
+ * model or another subject preserves the current question. A retake replaces
+ * only that subject's attempt; best scores are retained for this visit.
+ */
+function mountQuiz(container, { onInspect }) {
+  const sessions = new Map();
+  const best = new Map();
+  let activeIndex = 0;
+  const sidebar = node('nav', undefined, 'quiz-subjects');
+  sidebar.setAttribute('aria-label', 'Quiz subjects');
+  const main = node('div', undefined, 'quiz-main');
+  const live = node('p', '', 'quiz-announcement');
+  live.setAttribute('role', 'status');
+  live.setAttribute('aria-live', 'polite');
+  const layout = node('div', undefined, 'quiz-layout');
+  layout.append(sidebar, main);
+  container.append(layout, live);
+
+  function subject() { return subjects[activeIndex]; }
+  function session() {
+    if (!sessions.has(subject().id)) sessions.set(subject().id, new QuizSession(subject()));
+    return sessions.get(subject().id);
+  }
+
+  function focusHeading() { main.querySelector('[data-quiz-heading]')?.focus(); }
+
+  function renderSubjects() {
+    sidebar.replaceChildren();
+    sidebar.append(node('h3', 'Subjects'));
+    subjects.forEach((topic, index) => {
+      const item = button('', () => { activeIndex = index; render(); focusHeading(); });
+      item.classList.add('quiz-subject');
+      if (index === activeIndex) item.setAttribute('aria-current', 'step');
+      item.append(node('span', `${index + 1}. ${topic.title}`, 'quiz-subject-title'));
+      const saved = sessions.get(topic.id);
+      const status = best.has(topic.id)
+        ? `Best this visit: ${best.get(topic.id)}/${topic.questions.length}`
+        : saved?.responses.length ? `${saved.responses.length}/${topic.questions.length} answered` : `${topic.questions.length} questions`;
+      item.append(node('span', status, 'quiz-subject-status'));
+      sidebar.append(item);
+    });
+    sidebar.append(node('p', 'Progress stays while you explore. Reloading starts a new visit.', 'quiz-note'));
+  }
+
+  function heading(text) {
+    const element = node('h3', text, 'quiz-heading');
+    element.setAttribute('data-quiz-heading', '');
+    element.tabIndex = -1;
+    return element;
+  }
+
+  function renderQuestion() {
+    const attempt = session();
+    const question = attempt.current;
+    main.append(node('p', `Subject ${activeIndex + 1} of ${subjects.length} · Question ${attempt.index + 1} of ${attempt.total}`, 'quiz-eyebrow'));
+    main.append(heading(subject().title));
+    const meter = document.createElement('progress');
+    meter.max = attempt.total; meter.value = attempt.responses.length;
+    meter.setAttribute('aria-label', 'Questions answered in this subject');
+    main.append(meter);
+
+    const form = node('form');
+    const choices = node('fieldset', undefined, 'quiz-options');
+    const legend = node('legend', question.prompt, 'quiz-question');
+    choices.append(legend);
+    const submit = node('button', 'Check answer', 'ga-button ga-primary');
+    submit.type = 'submit';
+    submit.disabled = attempt.selectedId === null;
+
+    question.options.forEach((option, index) => {
+      const label = node('label', undefined, 'quiz-option');
+      const radio = document.createElement('input');
+      radio.type = 'radio'; radio.name = question.id; radio.value = option.id;
+      radio.checked = attempt.selectedId === option.id;
+      radio.disabled = attempt.answered;
+      radio.addEventListener('change', () => {
+        attempt.select(option.id);
+        submit.disabled = false;
+      });
+      const copy = node('span', undefined, 'quiz-option-copy');
+      copy.append(node('span', `${String.fromCharCode(65 + index)}. ${option.label}`));
+      if (attempt.answered) {
+        if (option.id === question.correctId) {
+          label.classList.add('quiz-correct');
+          copy.append(node('span', option.id === attempt.selectedId ? 'Your answer · correct' : 'Correct answer', 'quiz-verdict'));
+        } else if (option.id === attempt.selectedId) {
+          label.classList.add('quiz-incorrect');
+          copy.append(node('span', 'Your answer', 'quiz-verdict'));
+        }
+        copy.append(node('span', option.feedback, 'quiz-feedback'));
+      }
+      label.append(radio, copy); choices.append(label);
+    });
+    form.append(choices);
+
+    const hint = node('details', undefined, 'quiz-hint');
+    hint.append(node('summary', 'Need a hint?'), node('p', question.hint));
+    form.append(hint);
+    const actions = node('div', undefined, 'quiz-actions');
+    if (attempt.answered) {
+      const correct = attempt.responses[attempt.index].correct;
+      const feedback = node('p', correct ? 'You got it.' : 'Review the explanations, then continue.', 'quiz-answer-status');
+      feedback.setAttribute('role', 'status'); main.append(feedback);
+      actions.append(button(attempt.index === attempt.total - 1 ? 'Finish subject' : 'Next question', () => {
+        attempt.advance();
+        if (attempt.complete) best.set(subject().id, Math.max(best.get(subject().id) || 0, attempt.score));
+        render(); focusHeading();
+      }, true));
+      actions.append(button('Inspect this component', () => onInspect(question.component)));
+    } else {
+      actions.append(submit);
+    }
+    form.append(actions);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const response = attempt.submit();
+      if (!response) return;
+      render();
+      live.textContent = response.correct ? 'Correct. Answer explanations are now shown.' : 'Answer recorded. The correct answer and explanations are now shown.';
+      main.querySelector('.quiz-actions button')?.focus();
+    });
+    main.append(form);
+  }
+
+  function renderResults() {
+    const attempt = session();
+    main.append(node('p', `Subject ${activeIndex + 1} of ${subjects.length} complete`, 'quiz-eyebrow'));
+    main.append(heading(subject().title));
+    main.append(node('p', `${attempt.score} / ${attempt.total}`, 'quiz-score'));
+    main.append(node('p', attempt.score === attempt.total
+      ? 'You answered every question correctly. Retest the concepts or continue.'
+      : 'Review the missed concepts below. You can retry now or move to the next subject.'));
+    const actions = node('div', undefined, 'quiz-actions');
+    actions.append(button('Retest this subject', () => {
+      sessions.set(subject().id, new QuizSession(subject()));
+      render(); focusHeading();
+      live.textContent = 'New attempt. Questions and answer choices have been shuffled.';
+    }));
+    if (activeIndex < subjects.length - 1) {
+      actions.append(button(`Next: ${subjects[activeIndex + 1].title}`, () => {
+        activeIndex++; render(); focusHeading();
+      }, true));
+    } else {
+      actions.append(button('Return to the first subject', () => {
+        activeIndex = 0; render(); focusHeading();
+      }, true));
+    }
+    main.append(actions);
+    main.append(node('p', 'Retakes use the same concept bank with shuffled order.', 'quiz-note'));
+    if (best.size === subjects.length) main.append(node('p', 'You have completed all six subjects. Use the subject list to revisit any topic.', 'quiz-complete'));
+    if (attempt.missed.length) {
+      main.append(node('h4', 'Concepts to revisit'));
+      const list = node('ul', undefined, 'quiz-review');
+      attempt.missed.forEach(response => {
+        const question = response.question;
+        const correct = question.options.find(option => option.id === question.correctId);
+        const item = node('li');
+        item.append(node('p', question.prompt), node('p', correct.feedback, 'quiz-note'));
+        item.append(button('Review in the model', () => onInspect(question.component)));
+        list.append(item);
+      });
+      main.append(list);
+    }
+  }
+
+  function render() {
+    // Ensure the first attempt exists before computing sidebar progress.
+    const attempt = session();
+    renderSubjects(); main.replaceChildren(); live.textContent = '';
+    if (attempt.complete) renderResults(); else renderQuestion();
+    const reading = node('details', undefined, 'quiz-hint');
+    reading.append(node('summary', 'Sources for this subject'));
+    const links = node('ul');
+    subject().sources.forEach(key => {
+      const source = sources[key];
+      const item = node('li');
+      const link = node('a', source.title);
+      link.href = source.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      item.append(link); links.append(item);
+    });
+    reading.append(links); main.append(reading);
+  }
+
+  render();
+  return { focus: focusHeading };
+}
+
+return { mountQuiz };
+})();
+// src/main.js
+__modules["src/main.js"] = (() => {
+const { createExplorer } = __modules["src/explorer.js"];
+const { mountQuiz } = __modules["src/quiz/view.js"];
+
+
+
+const root = document.getElementById('gpu-anatomy');
+const explorer = createExplorer(root);
+const explorePanel = document.getElementById('explore-view');
+const quizPanel = document.getElementById('quiz-view');
+const exploreButton = document.getElementById('activity-explore');
+const quizButton = document.getElementById('activity-quiz');
+
+function showActivity(activity) {
+  const quizVisible = activity === 'quiz';
+  explorePanel.hidden = quizVisible;
+  quizPanel.hidden = !quizVisible;
+  exploreButton.setAttribute('aria-pressed', String(!quizVisible));
+  quizButton.setAttribute('aria-pressed', String(quizVisible));
+  if (quizVisible) explorer.pause();
+  else explorer.refresh();
+}
+
+const quiz = mountQuiz(quizPanel, {
+  onInspect(component) {
+    showActivity('explore');
+    explorer.inspect(component);
+    document.getElementById('ga-component').focus();
+  },
+});
+
+exploreButton.addEventListener('click', () => showActivity('explore'));
+quizButton.addEventListener('click', () => { showActivity('quiz'); quiz.focus(); });
+
+return {  };
+})();
+})();
+</script>
+
+</body>
+</html>
