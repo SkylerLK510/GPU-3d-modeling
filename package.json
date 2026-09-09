@@ -1,0 +1,12 @@
+{
+  "name": "rtx-5070-gpu-anatomy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive GPU anatomy explorer and machine learning quizzes",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}
