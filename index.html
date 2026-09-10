@@ -82,6 +82,12 @@
     @media(max-width:670px){#gpu-anatomy .ga-stage{height:440px}#gpu-anatomy .ga-view-field{max-width:180px}#gpu-anatomy .ga-view-field select{font-size:16px}}
     @media(max-width:390px){#gpu-anatomy .ga-stage{height:370px}}
 
+
+#gpu-anatomy .ga-hint.ga-error { top: 50%; transform: translateY(-50%); pointer-events: auto; max-height: calc(100% - 100px); overflow: auto; padding: 14px; background: var(--ga-panel); border: 1px solid var(--ga-line); border-radius: 8px; }
+#gpu-anatomy .ga-error p { margin: 0 0 10px; }
+#gpu-anatomy .ga-error details { text-align: left; }
+#gpu-anatomy .ga-error pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+
 </style>
 <style>
 /* The quiz extends the explorer's theme; correct/incorrect states also use text. */
@@ -2051,8 +2057,37 @@ const kernelJourney = [
 
 return { components, componentGroups, kernelJourney };
 })();
+// src/scene/startup.js
+__modules["src/scene/startup.js"] = (() => {
+
+/** Try a fresh canvas with fewer graphics requirements after a context failure. */
+function createRenderer(THREE, makeCanvas) {
+  const failures = [];
+  for (const settings of [
+    { antialias: true, powerPreference: 'low-power' },
+    { antialias: false, powerPreference: 'default' },
+  ]) {
+    const canvas = makeCanvas();
+    let contextReason = '';
+    const recordReason = event => { contextReason = event.statusMessage || ''; };
+    canvas.addEventListener('webglcontextcreationerror', recordReason);
+    try {
+      return new THREE.WebGLRenderer({ canvas, alpha: true, ...settings });
+    } catch (error) {
+      const message = error?.message || String(error);
+      failures.push(contextReason ? `${message} (${contextReason})` : message);
+    } finally {
+      canvas.removeEventListener('webglcontextcreationerror', recordReason);
+    }
+  }
+  throw new Error(failures.map((message, i) => `Attempt ${i + 1}: ${message}`).join('\n'));
+}
+
+return { createRenderer };
+})();
 // src/explorer.js
 __modules["src/explorer.js"] = (() => {
+const { createRenderer } = __modules["src/scene/startup.js"];
 const { buildFlow } = __modules["src/scene/flow.js"];
 const { buildSm } = __modules["src/scene/sm.js"];
 const { buildChip } = __modules["src/scene/chip.js"];
@@ -2669,17 +2704,57 @@ function createExplorer(root) {
       passive: false
     });
   }
-  // Initialize graphics after the engine loads. Component text and quiz state do not depend on success.
+  // Initialization failures must not leave controls targeting a partial scene.
+  let startupStage = 'engine';
+  function reportStartupFailure(error) {
+    ready = false;
+    delete root.dataset.ready;
+    if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+    frameRequest = null;
+    stopPlay();
+    try { dispose(); } catch (_) { /* A partial scene may not be disposable. */ }
+    if (renderer) {
+      renderer.domElement.remove();
+      try { renderer.dispose(); } catch (_) { /* Preserve the original error. */ }
+      renderer = null;
+    }
+    $('ga-pin').hidden = true;
+    const message = error?.message || String(error);
+    root.dataset.error = message;
+    root.dataset.errorStage = startupStage;
+    const hint = $('ga-loading');
+    hint.hidden = false;
+    hint.classList.add('ga-error');
+    hint.setAttribute('role', 'status');
+    const summary = document.createElement('p');
+    summary.textContent = startupStage === 'graphics-context'
+      ? 'The browser could not start WebGL, even with simpler graphics settings. Try another browser or check its graphics settings.'
+      : startupStage === 'engine'
+        ? 'The 3D library could not load. Check your internet connection and whether this browser allows downloads from cdn.jsdelivr.net.'
+        : 'The 3D scene could not finish starting. Open the error details below to identify the problem.';
+    const available = document.createElement('p');
+    available.textContent = 'Component explanations and quizzes are still available.';
+    const details = document.createElement('details');
+    const title = document.createElement('summary');
+    title.textContent = 'Show error details';
+    const diagnostic = document.createElement('pre');
+    diagnostic.textContent = `Stage: ${startupStage}\n${message}`;
+    details.append(title, diagnostic);
+    hint.replaceChildren(summary, available, details);
+  }
+  function startGraphics() {
+    try { init(); } catch (error) { reportStartupFailure(error); }
+  }
+  // Component text and quiz state do not depend on graphics initialization.
   function init() {
+    startupStage = 'engine';
     THREE = window.THREE;
     getPalette();
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(40, 1, .1, 150);
-    renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'low-power'
-    });
+    startupStage = 'graphics-context';
+    renderer = createRenderer(THREE, () => document.createElement('canvas'));
+    startupStage = 'scene';
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2762,30 +2837,12 @@ function createExplorer(root) {
   fillSelect();
   showText(selected);
   if (window.THREE) {
-    try {
-      init();
-    }
-    catch (e) {
-      $('ga-loading').textContent = '3D rendering is unavailable in this browser. All component explanations remain available in the menu.';
-      root.dataset.error = e.message;
-    }
-  }
-  else {
+    startGraphics();
+  } else {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
-    script.onload =() => {
-      try {
-        init();
-      }
-      catch (e) {
-        $('ga-loading').textContent = '3D rendering is unavailable in this browser. All component explanations remain available in the menu.';
-        root.dataset.error = e.message;
-      }
-    };
-    script.onerror =() => {
-      $('ga-loading').textContent = 'The 3D engine could not load. Component explanations are available in the menu.';
-      root.dataset.error = 'engine-load';
-    };
+    script.onload = startGraphics;
+    script.onerror = () => reportStartupFailure(new Error('Could not download Three.js 0.160.0 from cdn.jsdelivr.net.'));
     document.head.appendChild(script);
   }
   return {

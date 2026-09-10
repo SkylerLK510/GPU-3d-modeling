@@ -18,6 +18,14 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Then open <http://localhost:8000>. Stop the server with Ctrl+C.
 
+## If 3D does not start
+
+The page retries graphics initialization with antialiasing disabled and the browser's default GPU preference. If both attempts fail, open **Show error details** in the model area. The reported stage distinguishes a library download problem, WebGL initialization failure, and a scene-code failure.
+
+For a `graphics-context` failure, try another current browser or check the browser's graphics/hardware-acceleration settings. For an `engine` failure, check internet access and whether the Three.js CDN request is blocked. A `scene` failure should be reported with the displayed error text. Component explanations and quizzes remain usable when startup fails.
+
+The page cannot override a browser or device policy that disables WebGL. If reporting a problem, include the browser/version and error details; no screen recording is needed.
+
 ## What you can explore
 
 - Four levels: the card, inside the chip, one streaming multiprocessor, and a kernel's journey.

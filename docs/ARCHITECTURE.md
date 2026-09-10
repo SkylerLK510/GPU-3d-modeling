@@ -25,6 +25,7 @@ In `components`, `role` explains function, `ml` connects the component to worklo
 
 | Section label | Responsibility |
 | --- | --- |
+| `src/scene/startup.js` | Renderer creation with a simpler-settings fallback and context error capture |
 | `src/scene/primitives.js` | Shared geometry, material, label, grouping, and layer helpers |
 | `src/scene/card.js` | Physical assembly, fans, cooler, PCB, connectors, and backplate |
 | `src/scene/chip.js` | Schematic chip-level functional blocks |
@@ -36,7 +37,7 @@ In `components`, `role` explains function, `ml` connects the component to worklo
 
 ## Startup and failure behavior
 
-The explorer attaches controls and fills descriptions before the external graphics script is available. It then reuses `window.THREE` if present or loads Three.js from its pinned CDN URL. Loading and initialization failures produce a message in the stage. `mountQuiz` runs independently of that asynchronous load.
+The explorer attaches controls and fills descriptions before the external graphics script is available. It then reuses `window.THREE` if present or loads Three.js from its pinned CDN URL. Renderer creation retries on a fresh canvas with simpler settings after an initial failure. Loading and initialization failures produce a message with expandable error details. Failed startup clears partially initialized graphics state before leaving the educational controls available. `mountQuiz` runs independently of that asynchronous load.
 
 There is no server state. The quiz view owns a `Map` of attempts and a second `Map` of best scores. Both disappear on reload. No local-storage persistence is implemented.
 
